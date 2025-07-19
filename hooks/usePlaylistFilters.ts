@@ -5,6 +5,8 @@ interface FilterOptions {
   searchTerm: string;
   status: 'all' | 'completed' | 'in-progress' | 'not-started';
   duration: 'all' | 'short' | 'medium' | 'long';
+  category: string; // NEW: Category filter
+  difficulty: 'all' | 'beginner' | 'intermediate' | 'advanced'; // NEW: Difficulty filter
   sortBy: 'name' | 'created' | 'progress' | 'duration';
   sortOrder: 'asc' | 'desc';
 }
@@ -14,6 +16,8 @@ export const usePlaylistFilters = (playlists: Playlist[]) => {
     searchTerm: '',
     status: 'all',
     duration: 'all',
+    category: '', // NEW
+    difficulty: 'all', // NEW
     sortBy: 'created',
     sortOrder: 'desc'
   });
@@ -24,7 +28,9 @@ export const usePlaylistFilters = (playlists: Playlist[]) => {
     // Search filter
     if (filters.searchTerm) {
       result = result.filter(playlist => 
-        playlist.name.toLowerCase().includes(filters.searchTerm.toLowerCase())
+        playlist.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        playlist.categories?.some(cat => cat.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
+        playlist.tags?.some(tag => tag.toLowerCase().includes(filters.searchTerm.toLowerCase()))
       );
     }
 
@@ -62,6 +68,20 @@ export const usePlaylistFilters = (playlists: Playlist[]) => {
             return true;
         }
       });
+    }
+
+    // NEW: Category filter
+    if (filters.category) {
+      result = result.filter(playlist => 
+        playlist.categories?.includes(filters.category)
+      );
+    }
+
+    // NEW: Difficulty filter
+    if (filters.difficulty !== 'all') {
+      result = result.filter(playlist => 
+        playlist.difficulty === filters.difficulty
+      );
     }
 
     // Sorting
@@ -102,6 +122,8 @@ export const usePlaylistFilters = (playlists: Playlist[]) => {
       searchTerm: '',
       status: 'all',
       duration: 'all',
+      category: '', // NEW
+      difficulty: 'all', // NEW
       sortBy: 'created',
       sortOrder: 'desc'
     });

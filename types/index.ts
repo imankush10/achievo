@@ -21,6 +21,9 @@ export interface Playlist {
   createdAt: Date;
   updatedAt: Date;
   title?: string;
+  categories: string[];
+  tags: string[];
+  difficulty?: "beginner" | "intermediate" | "advanced";
 }
 
 export interface User {

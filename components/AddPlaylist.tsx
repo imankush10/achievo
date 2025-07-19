@@ -1,15 +1,30 @@
-import { useState } from 'react';
-import { YouTubeService } from '@/services/youtube';
-import { usePlaylists } from '@/hooks/usePlaylists';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from './Toast';
-import { PlusIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { useState } from "react";
+import { YouTubeService } from "@/services/youtube";
+import { usePlaylists } from "@/hooks/usePlaylists";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "./Toast";
+import { CategorySelector } from "./CategorySelector";
+import {
+  PlusIcon,
+  LinkIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "@heroicons/react/24/outline";
 
 export const AddPlaylist = () => {
-  const [playlistUrl, setPlaylistUrl] = useState('');
+  const [playlistUrl, setPlaylistUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Category states
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [difficulty, setDifficulty] = useState<
+    "beginner" | "intermediate" | "advanced" | undefined
+  >();
+
   const { user } = useAuth();
-  const { createPlaylist } = usePlaylists(user?.uid);
+  const { createPlaylist, playlists } = usePlaylists(user?.uid);
   const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,38 +36,53 @@ export const AddPlaylist = () => {
     try {
       const playlistId = YouTubeService.extractPlaylistId(playlistUrl);
       if (!playlistId) {
-        throw new Error('Invalid YouTube playlist URL');
+        throw new Error("Invalid YouTube playlist URL");
       }
 
-      // Use the new single API call
-      const { videos, title } = await YouTubeService.getPlaylistData(playlistId);
-
-      const totalDuration = videos.reduce((sum, video) => sum + video.durationInSeconds, 0);
+      const { videos, title } = await YouTubeService.getPlaylistData(
+        playlistId
+      );
+      const totalDuration = videos.reduce(
+        (sum, video) => sum + video.durationInSeconds,
+        0
+      );
 
       const playlistData = {
-        name: title, // Changed from 'title' to 'name'
-        description: '', // Add description field
+        name: title,
+        description: "",
         playlistUrl,
         videos,
-        thumbnailUrl: videos[0]?.thumbnailUrl || '', // Add thumbnail from first video
+        thumbnailUrl: videos[0]?.thumbnailUrl || "",
         totalDuration,
-        totalVideos: videos.length, // Add totalVideos field
+        totalVideos: videos.length,
         completedDuration: 0,
+        categories: selectedCategories,
+        tags: selectedTags,
+        ...(difficulty && { difficulty }),
       };
 
-      // This now works for both authenticated and guest users
       await createPlaylist(playlistData);
-      
+
       if (user) {
-        showToast('Playlist added successfully!', 'success');
+        showToast("Playlist added successfully!", "success");
       } else {
-        showToast('Playlist added! Sign in to save your progress permanently.', 'warning', 7000);
+        showToast(
+          "Playlist added! Sign in to save your progress permanently.",
+          "warning",
+          7000
+        );
       }
 
-      setPlaylistUrl('');
+      // Reset form
+      setPlaylistUrl("");
+      setSelectedCategories([]);
+      setSelectedTags([]);
+      setDifficulty(undefined);
+      setShowAdvanced(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add playlist';
-      showToast(errorMessage, 'error');
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to add playlist";
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -64,7 +94,9 @@ export const AddPlaylist = () => {
         <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
           <PlusIcon className="w-5 h-5 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-neutral-200">Add New Playlist</h2>
+        <h2 className="text-2xl font-bold text-neutral-200">
+          Add New Playlist
+        </h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -82,6 +114,37 @@ export const AddPlaylist = () => {
           />
         </div>
 
+        {/* Advanced Options Toggle */}
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors duration-200"
+        >
+          {showAdvanced ? (
+            <ChevronUpIcon className="w-4 h-4" />
+          ) : (
+            <ChevronDownIcon className="w-4 h-4" />
+          )}
+          <span className="text-sm font-medium">
+            {showAdvanced ? "Hide Advanced Options" : "Show Advanced Options"}
+          </span>
+        </button>
+
+        {/* Advanced Options - Categories & Tags */}
+        {showAdvanced && (
+          <div className="p-6 bg-neutral-800/50 rounded-xl border border-neutral-700/50">
+            <CategorySelector
+              selectedCategories={selectedCategories}
+              selectedTags={selectedTags}
+              difficulty={difficulty}
+              onCategoriesChange={setSelectedCategories}
+              onTagsChange={setSelectedTags}
+              onDifficultyChange={setDifficulty}
+              allPlaylists={playlists}
+            />
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={loading || !playlistUrl.trim()}
@@ -93,7 +156,7 @@ export const AddPlaylist = () => {
               <span>Adding Playlist...</span>
             </div>
           ) : (
-            'Add Playlist'
+            "Add Playlist"
           )}
         </button>
       </form>
