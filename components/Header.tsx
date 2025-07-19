@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { PlayIcon, UserCircleIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  PlayIcon,
+  UserCircleIcon,
+  Bars3Icon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import Link from "next/link";
 
 export const Header = () => {
   const { user, signInWithGoogle, logout } = useAuth();
@@ -29,6 +35,17 @@ export const Header = () => {
                 </p>
               </div>
             </div>
+          </div>
+          <div className="hidden md:flex items-center space-x-6">
+            <Link href="/dashboard" className="nav-link">
+              📚 Dashboard
+            </Link>
+            <Link href="/analytics" className="nav-link">
+              📊 Analytics
+            </Link>
+            <Link href="/profile" className="nav-link">
+              👤 Profile
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
@@ -83,49 +100,28 @@ export const Header = () => {
         {isMenuOpen && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-gradient-to-r from-white/10 via-white/25 to-white/10 backdrop-blur-md rounded-2xl border border-white/10 md:hidden">
             <div className="px-6 py-4">
-              <div className="flex flex-col space-y-4">
-                {user ? (
-                  <>
-                    <div className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-                      {user.photoURL ? (
-                        <img
-                          src={user.photoURL}
-                          alt={user.displayName || "User"}
-                          className="w-10 h-10 rounded-full ring-2 ring-white/30"
-                        />
-                      ) : (
-                        <UserCircleIcon className="w-10 h-10 text-white/80" />
-                      )}
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-white/90">
-                          {user.displayName || "User"}
-                        </div>
-                        <div className="text-xs text-white/60">
-                          {user.email}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        logout();
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full text-sm bg-red-500/20 text-red-300 px-4 py-3 rounded-lg hover:bg-red-500/30 transition-all duration-200 border border-red-500/30 backdrop-blur-sm"
-                    >
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => {
-                      signInWithGoogle();
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full bg-white/90 hover:bg-white text-black px-6 py-3 rounded-lg transition-all duration-200 shadow-lg font-medium backdrop-blur-sm"
-                  >
-                    Sign In
-                  </button>
-                )}
+              <div className="flex flex-col space-y-2 mb-4">
+                <Link
+                  href="/dashboard"
+                  className="px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  📚 Dashboard
+                </Link>
+                <Link
+                  href="/analytics"
+                  className="px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  📊 Analytics
+                </Link>
+                <Link
+                  href="/profile"
+                  className="px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  👤 Profile
+                </Link>
               </div>
             </div>
           </div>
