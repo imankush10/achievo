@@ -8,11 +8,19 @@ import { ChevronDownIcon, ChevronUpIcon, TrashIcon, PlayIcon } from '@heroicons/
 
 interface PlaylistItemProps {
   playlist: Playlist;
+  isSelected?: boolean;
+  onSelectionChange?: (playlistId: string) => void;
+  showSelection?: boolean;
 }
 
-export const PlaylistItem = ({ playlist }: PlaylistItemProps) => {
+export const PlaylistItem = ({ 
+  playlist, 
+  isSelected = false,
+  onSelectionChange,
+  showSelection = false
+}: PlaylistItemProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false); // Loading state for video toggles
+  const [isUpdating, setIsUpdating] = useState(false);
   const { user } = useAuth();
   const { deletePlaylist, toggleVideoCompletion } = usePlaylists(user?.uid);
 
@@ -22,7 +30,6 @@ export const PlaylistItem = ({ playlist }: PlaylistItemProps) => {
       await toggleVideoCompletion(playlist.id, videoId, completed);
     } catch (error) {
       console.error('Failed to toggle video completion:', error);
-      // You could add toast notification here
     } finally {
       setIsUpdating(false);
     }
@@ -34,8 +41,13 @@ export const PlaylistItem = ({ playlist }: PlaylistItemProps) => {
         await deletePlaylist(playlist.id);
       } catch (error) {
         console.error('Failed to delete playlist:', error);
-        // You could add toast notification here
       }
+    }
+  };
+
+  const handleSelectionChange = () => {
+    if (onSelectionChange) {
+      onSelectionChange(playlist.id);
     }
   };
 
@@ -43,7 +55,6 @@ export const PlaylistItem = ({ playlist }: PlaylistItemProps) => {
   const totalVideos = playlist.videos.length;
   const progressPercentage = totalVideos > 0 ? (completedVideos / totalVideos) * 100 : 0;
   
-  // Calculate completed duration from current videos
   const completedDuration = playlist.videos
     .filter(video => video.completed)
     .reduce((sum, video) => sum + video.durationInSeconds, 0);
@@ -51,31 +62,63 @@ export const PlaylistItem = ({ playlist }: PlaylistItemProps) => {
   const remainingDuration = playlist.totalDuration - completedDuration;
 
   return (
-    <div className={`glass-panel p-6 group hover:shadow-xl transition-all duration-300 ${isUpdating ? 'opacity-75' : ''}`}>
+    <div className={`glass-panel p-6 group hover:shadow-xl transition-all duration-300 ${
+      isUpdating ? 'opacity-75' : ''
+    } ${isSelected ? 'ring-2 ring-blue-500/50 bg-blue-500/5' : ''}`}>
+      
       <div className="flex justify-between items-start mb-6">
-        <div className="flex-1">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-              <PlayIcon className="w-4 h-4 text-black" />
+        <div className="flex items-start gap-4 flex-1">
+          {/* Selection checkbox */}
+          {showSelection && (
+            <div className="pt-1">
+              <label className="flex items-center cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={handleSelectionChange}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                    isSelected 
+                      ? 'bg-blue-500 border-blue-500' 
+                      : 'border-neutral-500 hover:border-blue-400'
+                  }`}>
+                    {isSelected && (
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              </label>
             </div>
-            <h3 className="text-xl font-semibold text-white">{playlist.name || playlist.title}</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="bg-neutral-800/80 rounded-lg p-3 border border-neutral-700/50">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-neutral-400">Progress</span>
-                <span className="text-sm font-medium text-white">{completedVideos}/{totalVideos}</span>
+          )}
+
+          <div className="flex-1">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
+                <PlayIcon className="w-4 h-4 text-black" />
               </div>
-              <div className="text-xs text-neutral-500 mt-1">videos completed</div>
+              <h3 className="text-xl font-semibold text-white">{playlist.name || playlist.title}</h3>
             </div>
             
-            <div className="bg-neutral-800/80 rounded-lg p-3 border border-neutral-700/50">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-neutral-400">Remaining</span>
-                <span className="text-sm font-medium text-white">{YouTubeService.formatDuration(remainingDuration)}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="bg-neutral-800/80 rounded-lg p-3 border border-neutral-700/50">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-400">Progress</span>
+                  <span className="text-sm font-medium text-white">{completedVideos}/{totalVideos}</span>
+                </div>
+                <div className="text-xs text-neutral-500 mt-1">videos completed</div>
               </div>
-              <div className="text-xs text-neutral-500 mt-1">time left</div>
+              
+              <div className="bg-neutral-800/80 rounded-lg p-3 border border-neutral-700/50">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-neutral-400">Remaining</span>
+                  <span className="text-sm font-medium text-white">{YouTubeService.formatDuration(remainingDuration)}</span>
+                </div>
+                <div className="text-xs text-neutral-500 mt-1">time left</div>
+              </div>
             </div>
           </div>
         </div>
@@ -131,7 +174,6 @@ export const PlaylistItem = ({ playlist }: PlaylistItemProps) => {
         </div>
       )}
       
-      {/* Optional loading indicator */}
       {isUpdating && (
         <div className="absolute inset-0 bg-black/10 rounded-lg flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
