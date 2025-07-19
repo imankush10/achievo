@@ -29,9 +29,9 @@ export const Header = () => {
                 <PlayIcon className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">PlaylistPro</h1>
+                <h1 className="text-xl font-bold text-white">Achievo</h1>
                 <p className="text-xs text-white/70">
-                  YouTube Playlist Manager
+                  Let's achieve it
                 </p>
               </div>
             </div>

@@ -6,8 +6,8 @@ import { Header } from "@/components/Header";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "PlaylistPro - YouTube Playlist Manager",
-  description: "Track your progress through YouTube playlists with style",
+  title: "Achievo - Time to achieve it",
+  description: "Track your progress through YouTube playlists",
 };
 
 export default function RootLayout({
