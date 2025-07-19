@@ -1,0 +1,142 @@
+import { useState } from 'react';
+import { Playlist } from '@/types';
+import { VideoItem } from './VideoItem';
+import { YouTubeService } from '@/services/youtube';
+import { usePlaylists } from '@/hooks/usePlaylists';
+import { useAuth } from '@/hooks/useAuth';
+import { ChevronDownIcon, ChevronUpIcon, TrashIcon, PlayIcon } from '@heroicons/react/24/outline';
+
+interface PlaylistItemProps {
+  playlist: Playlist;
+}
+
+export const PlaylistItem = ({ playlist }: PlaylistItemProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false); // Loading state for video toggles
+  const { user } = useAuth();
+  const { deletePlaylist, toggleVideoCompletion } = usePlaylists(user?.uid);
+
+  const handleToggleVideo = async (videoId: string, completed: boolean) => {
+    try {
+      setIsUpdating(true);
+      await toggleVideoCompletion(playlist.id, videoId, completed);
+    } catch (error) {
+      console.error('Failed to toggle video completion:', error);
+      // You could add toast notification here
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeletePlaylist = async () => {
+    if (window.confirm('Are you sure you want to delete this playlist?')) {
+      try {
+        await deletePlaylist(playlist.id);
+      } catch (error) {
+        console.error('Failed to delete playlist:', error);
+        // You could add toast notification here
+      }
+    }
+  };
+
+  const completedVideos = playlist.videos.filter(video => video.completed).length;
+  const totalVideos = playlist.videos.length;
+  const progressPercentage = totalVideos > 0 ? (completedVideos / totalVideos) * 100 : 0;
+  
+  // Calculate completed duration from current videos
+  const completedDuration = playlist.videos
+    .filter(video => video.completed)
+    .reduce((sum, video) => sum + video.durationInSeconds, 0);
+  
+  const remainingDuration = playlist.totalDuration - completedDuration;
+
+  return (
+    <div className={`glass-panel p-6 group hover:shadow-xl transition-all duration-300 ${isUpdating ? 'opacity-75' : ''}`}>
+      <div className="flex justify-between items-start mb-6">
+        <div className="flex-1">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
+              <PlayIcon className="w-4 h-4 text-black" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">{playlist.name || playlist.title}</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="bg-neutral-800/80 rounded-lg p-3 border border-neutral-700/50">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-neutral-400">Progress</span>
+                <span className="text-sm font-medium text-white">{completedVideos}/{totalVideos}</span>
+              </div>
+              <div className="text-xs text-neutral-500 mt-1">videos completed</div>
+            </div>
+            
+            <div className="bg-neutral-800/80 rounded-lg p-3 border border-neutral-700/50">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-neutral-400">Remaining</span>
+                <span className="text-sm font-medium text-white">{YouTubeService.formatDuration(remainingDuration)}</span>
+              </div>
+              <div className="text-xs text-neutral-500 mt-1">time left</div>
+            </div>
+          </div>
+        </div>
+        
+        <button
+          onClick={handleDeletePlaylist}
+          className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/20 transition-all duration-200"
+          disabled={isUpdating}
+        >
+          <TrashIcon className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="relative mb-6">
+        <div className="w-full bg-neutral-700 rounded-full h-2 overflow-hidden">
+          <div
+            className="h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+        <div 
+          className="absolute -top-1 bg-neutral-800 px-2 py-1 rounded text-xs text-neutral-300 transform -translate-x-1/2" 
+          style={{ left: `${Math.min(Math.max(progressPercentage, 5), 95)}%` }}
+        >
+          {Math.round(progressPercentage)}%
+        </div>
+      </div>
+
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors duration-200 group"
+        disabled={isUpdating}
+      >
+        {isExpanded ? (
+          <ChevronUpIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+        ) : (
+          <ChevronDownIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+        )}
+        <span className="text-sm font-medium">
+          {isExpanded ? 'Hide Videos' : `Show ${totalVideos} Videos`}
+        </span>
+      </button>
+
+      {isExpanded && (
+        <div className="mt-6 space-y-2 max-h-96 overflow-y-auto scrollbar-thin">
+          {playlist.videos.map((video) => (
+            <VideoItem
+              key={video.id}
+              video={video}
+              onToggleComplete={handleToggleVideo}
+            />
+          ))}
+        </div>
+      )}
+      
+      {/* Optional loading indicator */}
+      {isUpdating && (
+        <div className="absolute inset-0 bg-black/10 rounded-lg flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+    </div>
+  );
+};
