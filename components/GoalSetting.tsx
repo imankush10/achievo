@@ -8,37 +8,31 @@ import {
   CheckCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useAuth } from "@/hooks/useAuth"; // NEW: useAuth to get the user ID
-import { useGoals } from "@/hooks/useGoals"; // Your refactored hook
 import { Goal } from "@/types";
 
-// The component no longer needs any props
-export const GoalSetting: React.FC = () => {
-  const { user } = useAuth();
-  const { goals, loading, createGoal, updateGoal, deleteGoal } = useGoals(
-    user?.uid
-  );
+// A type for the processed goal object we expect
+type GoalWithProgress = Goal & { current: number; completed: boolean };
+
+// CORRECTED: Define props for the component
+interface GoalSettingProps {
+  goals: GoalWithProgress[];
+  loading: boolean;
+  createGoal: (goalData: Omit<Goal, 'id' | 'createdAt'>) => Promise<void>;
+  updateGoal: (goalId: string, updates: Partial<Omit<Goal, 'id' | 'createdAt'>>) => Promise<void>;
+  deleteGoal: (goalId: string) => Promise<void>;
+}
+
+// CORRECTED: The component now receives props
+export const GoalSetting: React.FC<GoalSettingProps> = ({
+  goals,
+  loading,
+  createGoal,
+  updateGoal,
+  deleteGoal
+}) => {
 
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
-
-  // Show signup message when user is not authenticated
-  if (!user) {
-    return (
-      <div className="glass-panel p-6">
-        <div className="text-center py-8">
-          <div className="text-4xl mb-4">🔒</div>
-          <h4 className="text-lg font-medium text-white mb-2">
-            Sign Up Required
-          </h4>
-          <p className="text-neutral-400 mb-4">
-            Please sign up first to unlock learning goals and track your
-            progress!
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   const handleShowCreateForm = () => {
     setEditingGoal(null);
@@ -55,7 +49,7 @@ export const GoalSetting: React.FC = () => {
     setEditingGoal(null);
   };
 
-  // Main Goal Card component (mostly unchanged)
+  // Main Goal Card component (unchanged)
   const GoalCard: React.FC<{
     goal: Goal & { current: number; completed: boolean };
   }> = ({ goal }) => {

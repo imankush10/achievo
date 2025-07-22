@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Goal, UserProfile } from "@/types";
-import { usePublicProfile } from "./usePublicProfile";
 import { GoalService } from "@/services/goalService";
 
 // Default goals for new users remain the same
@@ -28,8 +27,10 @@ const defaultGoals: Omit<Goal, "id" | "createdAt">[] = [
   },
 ];
 
-export const useGoals = (userId: string | undefined) => {
-  const { profile, loading: profileLoading } = usePublicProfile(userId);
+export const useGoals = (
+  userId: string | undefined,
+  stats: UserProfile['stats'] | undefined
+) => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -82,39 +83,37 @@ export const useGoals = (userId: string | undefined) => {
     setGoals(prev => prev.filter(g => g.id !== goalId));
   };
 
-  // REFACTORED: This function now uses the 'stats' object from the user's profile
-  const getGoalProgress = (goal: Goal, stats: UserProfile['stats']) => {
+  const getGoalProgress = (goal: Goal, currentStats: UserProfile['stats']) => {
     switch (goal.type) {
       case "weekly_hours":
         // Convert seconds to hours for comparison
-        const weeklyHours = (stats.weeklyLearningTime || 0) / 3600;
+        const weeklyHours = (currentStats.weeklyLearningTime || 0) / 3600;
         return { current: weeklyHours, target: goal.target };
       case "monthly_playlists":
-        return { current: stats.monthlyCompletions || 0, target: goal.target };
+        return { current: currentStats.monthlyCompletions || 0, target: goal.target };
       case "daily_streak":
-        return { current: stats.currentStreak || 0, target: goal.target };
+        return { current: currentStats.currentStreak || 0, target: goal.target };
       default:
         return { current: 0, target: goal.target };
     }
   };
 
-  // NEW: A memoized list of goals with their current progress calculated
   const goalsWithProgress = useMemo(() => {
-    if (!profile) return [];
+    if (!stats) return [];
 
     return goals.map(goal => {
-      const { current } = getGoalProgress(goal, profile.stats);
+      const { current } = getGoalProgress(goal, stats);
       return {
         ...goal,
         current,
         completed: current >= goal.target,
       };
     });
-  }, [goals, profile]);
+  }, [goals, stats]);
 
   return {
-    goals: goalsWithProgress, // Return goals with calculated progress
-    loading: loading || profileLoading,
+    goals: goalsWithProgress,
+    loading,
     createGoal,
     updateGoal,
     deleteGoal,

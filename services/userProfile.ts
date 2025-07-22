@@ -8,9 +8,9 @@ import {
   where,
   getDocs,
   orderBy,
-  limit,
+  limit as firestoreLimit,
   Timestamp,
-  arrayUnion
+  arrayUnion,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile, Playlist } from "@/types";
@@ -123,11 +123,36 @@ export class UserProfileService {
 
     return null;
   }
+  static async getUserProfileByUsername(
+    username: string
+  ): Promise<UserProfile | null> {
+    const q = query(
+      collection(db, "userProfiles"),
+      where("username", "==", username),
+      firestoreLimit(1)
+    );
 
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return null;
+    }
+
+    const profileSnap = querySnapshot.docs[0];
+    const data = profileSnap.data();
+
+    return {
+      ...data,
+      // Make sure to include the document ID as the uid
+      uid: profileSnap.id,
+      joinedDate: data.joinedDate.toDate(),
+      lastActiveDate: data.lastActiveDate.toDate(),
+    } as UserProfile;
+  }
   // Search users by username or display name
   static async searchUsers(
     searchTerm: string,
-    limit: number = 10
+    limitCount: number = 10
   ): Promise<UserProfile[]> {
     const searchLower = searchTerm.toLowerCase();
 
@@ -138,7 +163,7 @@ export class UserProfileService {
       where("username", "<=", searchLower + "\uf8ff"),
       where("isPublic", "==", true),
       orderBy("username"),
-      limit(limit)
+      firestoreLimit(limitCount)
     );
 
     const usernameResults = await getDocs(usernameQuery);
@@ -148,6 +173,7 @@ export class UserProfileService {
       const data = doc.data();
       users.push({
         ...data,
+        uid: doc.id, // Make sure to include the document ID as the uid
         joinedDate: data.joinedDate.toDate(),
         lastActiveDate: data.lastActiveDate.toDate(),
       } as UserProfile);
@@ -227,21 +253,21 @@ export class UserProfileService {
         collection(db, "userProfiles"),
         where("isPublic", "==", true),
         orderBy("stats.completedLearningTime", "desc"),
-        limit(limitCount)
+        firestoreLimit(limitCount)
       );
     } else if (timeframe === "weekly") {
       q = query(
         collection(db, "userProfiles"),
         where("isPublic", "==", true),
         orderBy("stats.weeklyLearningTime", "desc"),
-        limit(limitCount)
+        firestoreLimit(limitCount)
       );
     } else {
       q = query(
         collection(db, "userProfiles"),
         where("isPublic", "==", true),
         orderBy("stats.monthlyCompletions", "desc"),
-        limit(limitCount)
+        firestoreLimit(limitCount)
       );
     }
 
@@ -259,12 +285,15 @@ export class UserProfileService {
 
     return users;
   }
-  static async unlockAchievements(userId: string, achievementIds: string[]): Promise<void> {
+  static async unlockAchievements(
+    userId: string,
+    achievementIds: string[]
+  ): Promise<void> {
     if (achievementIds.length === 0) return;
     const profileRef = doc(db, "userProfiles", userId);
-    
+
     await updateDoc(profileRef, {
-      unlockedAchievements: arrayUnion(...achievementIds)
+      unlockedAchievements: arrayUnion(...achievementIds),
     });
   }
 }

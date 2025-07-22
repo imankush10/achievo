@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { PublicProfile } from "@/components/PublicProfile";
-import { FriendsList } from "@/components/FriendsList";
-import { Leaderboard } from "@/components/Leaderboard";
+import { usePublicProfile } from "@/hooks/usePublicProfile";
 import {
   UserIcon,
   UsersIcon,
@@ -12,37 +11,27 @@ import {
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
 
-import { usePublicProfile } from "@/hooks/usePublicProfile";
-import { useFriends } from "@/hooks/useFriends";
-import { useLeaderboard } from "@/hooks/useLeaderboard";
-
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<
-    "profile" | "friends" | "leaderboard"
-  >("profile");
+  const router = useRouter();
 
+  // Fetch the logged-in user's profile to get their username for redirection.
+  // The hook should not fetch if user.uid is falsy.
   const { profile, loading: profileLoading } = usePublicProfile(user?.uid);
-  const { friends, loading: friendsLoading } = useFriends(user?.uid);
-  const { weeklyLeaderboard, loading: leaderboardLoading } = useLeaderboard(
-    user?.uid
-  );
 
-  const userRank = weeklyLeaderboard?.entries.find(
-    (e) => e.isCurrentUser
-  )?.rank;
-  const weeklyLeader = weeklyLeaderboard?.entries[0]?.displayName;
-  const weeklyPoints = weeklyLeaderboard?.entries.find(
-    (e) => e.isCurrentUser
-  )?.score;
-  const weeklyGoalProgress = profile?.stats?.weeklyLearningTime
-    ? (profile.stats.weeklyLearningTime / 5) * 100
-    : 0;
+  // State for visual purposes on the guest page.
+  const [activeTab, setActiveTab] = useState<"profile" | "friends" | "leaderboard">("profile");
 
-  if (
-    authLoading ||
-    (user && (profileLoading || friendsLoading || leaderboardLoading))
-  ) {
+  useEffect(() => {
+    // When authentication and profile fetching are complete,
+    // and we have a user with a username, redirect.
+    if (!authLoading && !profileLoading && user && profile?.username) {
+      router.push(`/profile/${profile.username}`);
+    }
+  }, [user, profile, authLoading, profileLoading, router]);
+
+  // Display a loader while checking authentication or fetching the profile for redirection.
+  if (authLoading || (user && profileLoading)) {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center">
         <div className="relative">
@@ -56,28 +45,33 @@ export default function ProfilePage() {
     );
   }
 
+  // For a logged-in user, render nothing while the redirect is processing
+  // to prevent flashing the guest content.
+  if (user) {
+    return null;
+  }
+
+  // If loading is finished and the user is not authenticated, display the guest view.
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-2">
-          {user ? "Your Learning Profile" : "Learning Profile"}
+          Learning Profile
         </h1>
         <p className="text-neutral-400 text-lg">
-          {user
-            ? "Track your progress, connect with friends, and compete!"
-            : "Sign in to track progress, connect with friends, and compete!"}
+          Sign in to track progress, connect with friends, and compete!
         </p>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation (Disabled for guests) */}
       <div className="flex justify-center gap-2 mb-8">
         <button
           onClick={() => setActiveTab("profile")}
           className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
             activeTab === "profile"
               ? "bg-blue-600 text-white"
-              : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+              : "bg-neutral-700 text-neutral-300"
           } ${!user ? "opacity-60" : ""}`}
           disabled={!user}
         >
@@ -91,7 +85,7 @@ export default function ProfilePage() {
           className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
             activeTab === "friends"
               ? "bg-blue-600 text-white"
-              : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+              : "bg-neutral-700 text-neutral-300"
           } ${!user ? "opacity-60" : ""}`}
           disabled={!user}
         >
@@ -104,7 +98,7 @@ export default function ProfilePage() {
           className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
             activeTab === "leaderboard"
               ? "bg-blue-600 text-white"
-              : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+              : "bg-neutral-700 text-neutral-300"
           } ${!user ? "opacity-60" : ""}`}
           disabled={!user}
         >
@@ -113,107 +107,21 @@ export default function ProfilePage() {
           {!user && <LockClosedIcon className="w-4 h-4" />}
         </button>
       </div>
-      {/* Tab Content */}
-      {user && (
-        <>
-          {activeTab === "profile" && <PublicProfile userId={user?.uid} />}
-
-          {activeTab === "friends" && (
-            <div className="grid lg:grid-cols-2 gap-6">
-              <FriendsList userId={user?.uid} />
-              <div className="glass-panel p-6">
-                <h3 className="text-xl font-bold text-white mb-4">
-                  Quick Stats
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-neutral-800/50 rounded-lg">
-                    <span className="text-neutral-400">Active Friends</span>
-                    <span className="text-white font-medium">
-                      {friends.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-neutral-800/50 rounded-lg">
-                    <span className="text-neutral-400">This Week's Leader</span>
-                    <span className="text-white font-medium">
-                      {weeklyLeader || "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-neutral-800/50 rounded-lg">
-                    <span className="text-neutral-400">Your Rank</span>
-                    <span className="text-white font-medium">
-                      #{userRank || "N/A"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "leaderboard" && (
-            <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <Leaderboard userId={user?.uid} />
-              </div>
-              <div className="space-y-6">
-                {/* Personal Stats */}
-                <div className="glass-panel p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">
-                    Your Stats
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-neutral-400">Weekly Rank</span>
-                      <span className="text-yellow-400 font-medium">
-                        #{userRank || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-400">Points This Week</span>
-                      <span className="text-white font-medium">
-                        {weeklyPoints?.toLocaleString() || 0}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-400">Weekly Goal</span>
-                      <span className="text-green-400 font-medium">
-                        {weeklyGoalProgress.toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Motivation */}
-                <div className="glass-panel p-6 bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/30">
-                  <h4 className="font-bold text-white mb-2">💪 Keep Going!</h4>
-                  <p className="text-sm text-purple-300 mb-3">
-                    You're only 3 spots away from the top 5! Complete 2 more
-                    videos to climb higher.
-                  </p>
-                  <div className="text-xs text-purple-400">
-                    Next rank up in ~150 points
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      
       {/* Main Guest User Message */}
-      {!user && (
-        <div className="glass-panel p-8 text-center mt-8">
-          <div className="text-6xl mb-4">👋</div>
-          <h3 className="text-xl font-medium text-white mb-2">
-            Sign in to unlock all social features
-          </h3>
-          <p className="text-neutral-400 mb-6">
-            Connect with friends, compete on leaderboards, and showcase your
-            learning achievements!
-          </p>
-          <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200">
-            Sign In to Get Started
-          </button>
-        </div>
-      )}
+      <div className="glass-panel p-8 text-center mt-8">
+        <div className="text-6xl mb-4">👋</div>
+        <h3 className="text-xl font-medium text-white mb-2">
+          Sign in to unlock all social features
+        </h3>
+        <p className="text-neutral-400 mb-6">
+          Connect with friends, compete on leaderboards, and showcase your
+          learning achievements!
+        </p>
+        <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200">
+          Sign In to Get Started
+        </button>
+      </div>
     </div>
   );
 }

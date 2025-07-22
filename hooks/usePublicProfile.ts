@@ -1,54 +1,49 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '@/types';
 import { UserProfileService } from '@/services/userProfile';
+import { doc, updateDoc } from "firebase/firestore"; // Import directly
+import { db } from "@/lib/firebase"; // Import directly
+import { useAuth } from './useAuth'; // Assuming you have an auth hook
 
 export const usePublicProfile = (userId?: string) => {
+  const { user: authUser } = useAuth(); // Get authenticated user
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isOwn, setIsOwn] = useState(false);
+  
+  // isOwn can be a derived state, no need for useState
+  const isOwn = !!authUser && authUser.uid === userId;
 
   useEffect(() => {
     if (userId) {
-      loadProfile(userId);
+      setLoading(true);
+      UserProfileService.getUserProfile(userId)
+        .then(userProfile => {
+          setProfile(userProfile);
+        })
+        .catch(error => {
+          console.error('Failed to load profile:', error);
+          setProfile(null);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     }
   }, [userId]);
 
-  const loadProfile = async (targetUserId: string) => {
-    setLoading(true);
-    
-    try {
-      const userProfile = await UserProfileService.getUserProfile(targetUserId);
-      setProfile(userProfile);
-      setIsOwn(targetUserId === userId); // You can get current user from auth context
-    } catch (error) {
-      console.error('Failed to load profile:', error);
-      setProfile(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (profile && isOwn && userId) {
-      try {
-        // Update specific fields in Firebase
-        const updateData: any = {};
-        
-        if (updates.displayName) updateData.displayName = updates.displayName;
-        if (updates.bio !== undefined) updateData.bio = updates.bio;
-        if (updates.socialLinks) updateData.socialLinks = updates.socialLinks;
-        if (updates.isPublic !== undefined) updateData.isPublic = updates.isPublic;
+    if (!profile || !isOwn || !userId) {
+        throw new Error("Cannot update profile: not authorized or profile not loaded.");
+    }
 
-        await import('firebase/firestore').then(({ updateDoc, doc }) => {
-          return updateDoc(doc(import('@/lib/firebase').then(m => m.db), 'userProfiles', userId), updateData);
-        });
+    try {
+      // The update logic is much cleaner now
+      const profileRef = doc(db, 'userProfiles', userId);
+      await updateDoc(profileRef, updates);
 
-        // Update local state
-        setProfile(prev => prev ? { ...prev, ...updates } : null);
-      } catch (error) {
-        console.error('Failed to update profile:', error);
-        throw error;
-      }
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw error;
     }
   };
 

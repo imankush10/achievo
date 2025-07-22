@@ -24,7 +24,9 @@ export default function RootLayout({
           <div className="fixed inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800/40 to-neutral-900 pointer-events-none" />
           <div className="relative z-10">
             <Header />
-            <div className="container px-4 py-8 max-w-6xl mx-auto bg-transparent">{children}</div>
+            <div className="container px-4 py-8 max-w-6xl mx-auto bg-transparent">
+              {children}
+            </div>
           </div>
         </ToastProvider>
       </body>

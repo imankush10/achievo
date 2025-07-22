@@ -1,6 +1,7 @@
 import { Video } from '@/types';
 import { YouTubeService } from '@/services/youtube';
 import { CheckIcon, ClockIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 interface VideoItemProps {
   video: Video;
@@ -27,10 +28,13 @@ export const VideoItem = ({ video, onToggleComplete }: VideoItemProps) => {
         </button>
         
         <div className="relative flex-shrink-0 mr-4">
-          <img
+          <Image
             src={video.thumbnailUrl}
             alt={video.title}
+            width={80}
+            height={56}
             className="w-20 h-14 object-cover rounded-lg"
+            unoptimized
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-lg" />
           <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded">

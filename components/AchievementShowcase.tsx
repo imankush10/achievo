@@ -1,74 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  TrophyIcon, 
+import React, { useState } from "react";
+import {
+  TrophyIcon,
   LockClosedIcon,
   XMarkIcon,
-  SparklesIcon 
-} from '@heroicons/react/24/outline';
-import { useAchievements, Achievement } from '@/hooks/useAchievements';
-import { Playlist } from '@/types';
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
+import { Achievement } from "@/types";
 
 interface AchievementShowcaseProps {
-  playlists: Playlist[];
-  userId?: string;
+  achievements: Achievement[];
+  newlyUnlocked: Achievement[];
+  dismissNewAchievements: () => void;
+  getRarityColor: (rarity: Achievement["rarity"]) => string;
+  unlockedCount: number;
+  totalCount: number;
+  progress: number;
+  loading: boolean;
 }
 
-export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({ 
-  playlists, 
-  userId 
+export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
+  achievements,
+  newlyUnlocked,
+  dismissNewAchievements,
+  getRarityColor,
+  unlockedCount,
+  totalCount,
+  progress,
+  loading,
 }) => {
-  const { 
-    achievements, 
-    newlyUnlocked, 
-    dismissNewAchievements, 
-    getRarityColor, 
-    unlockedCount, 
-    totalCount, 
-    progress 
-  } = useAchievements(userId, playlists);
-
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showOnlyUnlocked, setShowOnlyUnlocked] = useState(false);
 
   const categories = [
-    { id: 'all', name: 'All', icon: '🏆' },
-    { id: 'completion', name: 'Completion', icon: '✅' },
-    { id: 'streak', name: 'Streaks', icon: '🔥' },
-    { id: 'time', name: 'Time', icon: '⏰' },
-    { id: 'exploration', name: 'Exploration', icon: '🗺️' },
-    { id: 'special', name: 'Special', icon: '⭐' }
+    { id: "all", name: "All", icon: "🏆" },
+    { id: "completion", name: "Completion", icon: "✅" },
+    { id: "streak", name: "Streaks", icon: "🔥" },
+    { id: "time", name: "Time", icon: "⏰" },
+    { id: "exploration", name: "Exploration", icon: "🗺️" },
+    { id: "special", name: "Special", icon: "⭐" },
   ];
 
-  const filteredAchievements = achievements.filter(achievement => {
-    const categoryMatch = selectedCategory === 'all' || achievement.category === selectedCategory;
+  const filteredAchievements = achievements.filter((achievement) => {
+    const categoryMatch =
+      selectedCategory === "all" || achievement.category === selectedCategory;
     const unlockedMatch = !showOnlyUnlocked || achievement.unlocked;
     return categoryMatch && unlockedMatch;
   });
 
-  const AchievementCard: React.FC<{ achievement: Achievement }> = ({ achievement }) => {
-    const progressPercentage = achievement.progress 
-      ? Math.min((achievement.progress / achievement.requirement) * 100, 100) 
+  const AchievementCard: React.FC<{ achievement: Achievement }> = ({
+    achievement,
+  }) => {
+    const progressPercentage = achievement.progress
+      ? Math.min((achievement.progress / achievement.requirement) * 100, 100)
       : 0;
 
     return (
-      <div className={`relative p-4 rounded-xl border transition-all duration-300 hover:scale-105 ${
-        achievement.unlocked
-          ? 'bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-lg'
-          : 'bg-neutral-800/50 border-neutral-700/50 hover:border-neutral-600/50'
-      }`}>
+      <div
+        className={`relative p-4 rounded-xl border transition-all duration-300 hover:scale-105 ${
+          achievement.unlocked
+            ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-lg"
+            : "bg-neutral-800/50 border-neutral-700/50 hover:border-neutral-600/50"
+        }`}
+      >
         {/* Rarity Indicator */}
-        <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${getRarityColor(achievement.rarity)}`} />
-        
+        <div
+          className={`absolute top-2 right-2 w-3 h-3 rounded-full ${getRarityColor(
+            achievement.rarity
+          )}`}
+        />
+
         {/* Achievement Icon */}
-        <div className={`text-4xl mb-3 ${achievement.unlocked ? '' : 'grayscale opacity-50'}`}>
-          {achievement.unlocked ? achievement.icon : '🔒'}
+        <div
+          className={`text-4xl mb-3 ${
+            achievement.unlocked ? "" : "grayscale opacity-50"
+          }`}
+        >
+          {achievement.unlocked ? achievement.icon : "🔒"}
         </div>
 
         {/* Achievement Info */}
         <div className="mb-3">
-          <h4 className={`font-semibold mb-1 ${
-            achievement.unlocked ? 'text-white' : 'text-neutral-500'
-          }`}>
+          <h4
+            className={`font-semibold mb-1 ${
+              achievement.unlocked ? "text-white" : "text-neutral-500"
+            }`}
+          >
             {achievement.title}
           </h4>
           <p className="text-sm text-neutral-400 line-clamp-2">
@@ -95,9 +111,11 @@ export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
         )}
 
         {/* Rarity Badge */}
-        <div className={`inline-block px-2 py-1 rounded text-xs font-medium capitalize ${
-          getRarityColor(achievement.rarity)
-        } text-white`}>
+        <div
+          className={`inline-block px-2 py-1 rounded text-xs font-medium capitalize ${getRarityColor(
+            achievement.rarity
+          )} text-white`}
+        >
           {achievement.rarity}
         </div>
 
@@ -133,8 +151,10 @@ export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
 
           <div className="text-center">
             <div className="text-6xl mb-4">🎉</div>
-            <h3 className="text-2xl font-bold text-white mb-2">Achievement Unlocked!</h3>
-            
+            <h3 className="text-2xl font-bold text-white mb-2">
+              Achievement Unlocked!
+            </h3>
+
             {newlyUnlocked.map((achievement, index) => (
               <div key={achievement.id} className="mb-4 last:mb-6">
                 <div className="text-4xl mb-2">{achievement.icon}</div>
@@ -144,9 +164,11 @@ export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
                 <p className="text-sm text-neutral-400 mb-2">
                   {achievement.description}
                 </p>
-                <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium capitalize ${
-                  getRarityColor(achievement.rarity)
-                } text-white`}>
+                <div
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-medium capitalize ${getRarityColor(
+                    achievement.rarity
+                  )} text-white`}
+                >
                   {achievement.rarity}
                 </div>
               </div>
@@ -163,6 +185,21 @@ export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="glass-panel p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-neutral-700 rounded mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-48 bg-neutral-700 rounded-xl"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -181,7 +218,9 @@ export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
 
           {/* Overall Progress */}
           <div className="text-right">
-            <div className="text-2xl font-bold text-white mb-1">{progress.toFixed(0)}%</div>
+            <div className="text-2xl font-bold text-white mb-1">
+              {progress.toFixed(0)}%
+            </div>
             <div className="w-24 bg-neutral-700 rounded-full h-2 overflow-hidden">
               <div
                 className="h-2 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-full transition-all duration-500"
@@ -193,14 +232,14 @@ export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
 
         {/* Category Filter */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {categories.map(category => (
+          {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
                 selectedCategory === category.id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
+                  ? "bg-blue-600 text-white"
+                  : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
               }`}
             >
               <span>{category.icon}</span>
@@ -218,14 +257,24 @@ export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
               onChange={(e) => setShowOnlyUnlocked(e.target.checked)}
               className="sr-only"
             />
-            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-              showOnlyUnlocked 
-                ? 'bg-blue-500 border-blue-500' 
-                : 'border-neutral-500 hover:border-blue-400'
-            }`}>
+            <div
+              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                showOnlyUnlocked
+                  ? "bg-blue-500 border-blue-500"
+                  : "border-neutral-500 hover:border-blue-400"
+              }`}
+            >
               {showOnlyUnlocked && (
-                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <svg
+                  className="w-3 h-3 text-white"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               )}
             </div>
@@ -238,19 +287,20 @@ export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
         {/* Achievements Grid */}
         {filteredAchievements.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredAchievements.map(achievement => (
+            {filteredAchievements.map((achievement) => (
               <AchievementCard key={achievement.id} achievement={achievement} />
             ))}
           </div>
         ) : (
           <div className="text-center py-8">
             <div className="text-4xl mb-4">🏆</div>
-            <h4 className="text-lg font-medium text-white mb-2">No achievements found</h4>
+            <h4 className="text-lg font-medium text-white mb-2">
+              No achievements found
+            </h4>
             <p className="text-neutral-400">
-              {showOnlyUnlocked 
-                ? "You haven't unlocked any achievements in this category yet. Keep learning!" 
-                : "Try a different category or start learning to unlock achievements!"
-              }
+              {showOnlyUnlocked
+                ? "You haven't unlocked any achievements in this category yet. Keep learning!"
+                : "Try a different category or start learning to unlock achievements!"}
             </p>
           </div>
         )}
@@ -265,10 +315,19 @@ export const AchievementShowcase: React.FC<AchievementShowcaseProps> = ({
               return acc;
             }, {} as Record<string, number>)
           ).map(([rarity, count]) => (
-            <div key={rarity} className="text-center p-3 bg-neutral-800/50 rounded-lg">
-              <div className={`w-4 h-4 rounded-full mx-auto mb-2 ${getRarityColor(rarity as Achievement['rarity'])}`} />
+            <div
+              key={rarity}
+              className="text-center p-3 bg-neutral-800/50 rounded-lg"
+            >
+              <div
+                className={`w-4 h-4 rounded-full mx-auto mb-2 ${getRarityColor(
+                  rarity as Achievement["rarity"]
+                )}`}
+              />
               <div className="text-lg font-bold text-white">{count}</div>
-              <div className="text-xs text-neutral-400 capitalize">{rarity}</div>
+              <div className="text-xs text-neutral-400 capitalize">
+                {rarity}
+              </div>
             </div>
           ))}
         </div>

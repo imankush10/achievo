@@ -11,8 +11,32 @@ import {
 import Link from "next/link";
 
 export const Header = () => {
-  const { user, signInWithGoogle, logout } = useAuth();
+  const { user, userProfile, signInWithGoogle, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Determine profile link based on auth state
+  const getProfileLink = () => {
+    if (user && userProfile?.username) {
+      return `/profile/${userProfile.username}`;
+    }
+    return "/profile"; // This will be your login prompt page
+  };
+
+  const ProfileLink = ({ className, onClick }: { className?: string, onClick?: () => void }) => {
+    if (user && userProfile?.username) {
+      return (
+        <Link href={`/profile/${userProfile.username}`} className={className} onClick={onClick}>
+          👤 Profile
+        </Link>
+      );
+    }
+    
+    return (
+      <Link href="/profile" className={className} onClick={onClick}>
+        👤 Profile
+      </Link>
+    );
+  };
 
   return (
     <div className="h-24">
@@ -30,9 +54,7 @@ export const Header = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Achievo</h1>
-                <p className="text-xs text-white/70">
-                  Let's achieve it
-                </p>
+                <p className="text-xs text-white/70">Let's achieve it</p>
               </div>
             </div>
           </div>
@@ -43,9 +65,7 @@ export const Header = () => {
             <Link href="/analytics" className="nav-link">
               📊 Analytics
             </Link>
-            <Link href="/profile" className="nav-link">
-              👤 Profile
-            </Link>
+            <ProfileLink className="nav-link" />
           </div>
 
           {/* Desktop Navigation */}
@@ -115,13 +135,10 @@ export const Header = () => {
                 >
                   📊 Analytics
                 </Link>
-                <Link
-                  href="/profile"
+                <ProfileLink 
                   className="px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
                   onClick={() => setIsMenuOpen(false)}
-                >
-                  👤 Profile
-                </Link>
+                />
               </div>
             </div>
           </div>

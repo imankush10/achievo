@@ -1,20 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
-import { UserProfile } from "@/types";
-import { usePublicProfile } from "./usePublicProfile";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { UserProfile, Playlist, Achievement } from "@/types";
 import { UserProfileService } from "@/services/userProfile";
-
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
-  category: "completion" | "streak" | "time" | "exploration" | "special";
-  unlocked: boolean;
-  unlockedAt?: Date;
-  progress?: number;
-  requirement: number;
-}
 
 const allAchievements: Omit<
   Achievement,
@@ -147,9 +133,11 @@ const allAchievements: Omit<
   },
 ];
 
-export const useAchievements = (userId: string | undefined) => {
-  const { profile, loading } = usePublicProfile(userId); // NEW: Get the single source of truth
-
+export const useAchievements = (
+  userId: string | undefined,
+  profile: UserProfile | null,
+  playlists: Playlist[]
+) => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [newlyUnlocked, setNewlyUnlocked] = useState<Achievement[]>([]);
 
@@ -181,16 +169,16 @@ export const useAchievements = (userId: string | undefined) => {
         return 0;
     }
   };
+
   const currentAchievements = useMemo(() => {
-    if (!profile) return [];
+    if (!profile || !playlists) return [];
+
+    const stats = profile.stats;
+    if (!stats) return [];
 
     return allAchievements.map((achievementDef) => {
-      const progress = calculateAchievementProgress(
-        achievementDef,
-        profile.stats
-      );
+      const progress = calculateAchievementProgress(achievementDef, stats);
       const unlocked = progress >= achievementDef.requirement;
-
       const isAlreadyUnlockedInDb = profile.unlockedAchievements?.includes(
         achievementDef.id
       );
@@ -199,15 +187,14 @@ export const useAchievements = (userId: string | undefined) => {
         ...achievementDef,
         progress,
         unlocked: isAlreadyUnlockedInDb || unlocked,
+        unlockedAt: isAlreadyUnlockedInDb ? profile.unlockedAchievements?.[achievementDef.id]?.date : undefined
       };
     });
-  }, [profile]);
+  }, [profile, playlists]);
 
-  // REFACTORED: This effect now checks for new unlocks and updates Firebase
   useEffect(() => {
     if (!profile || !userId) return;
 
-    // Find achievements that are newly unlocked but not yet saved in the DB
     const newlyUnlockedAchievements = currentAchievements.filter(
       (ach) => ach.unlocked && !profile.unlockedAchievements?.includes(ach.id)
     );
@@ -215,11 +202,9 @@ export const useAchievements = (userId: string | undefined) => {
     if (newlyUnlockedAchievements.length > 0) {
       const newIds = newlyUnlockedAchievements.map((ach) => ach.id);
 
-      // Update Firebase with the new achievements
       UserProfileService.unlockAchievements(userId, newIds)
         .then(() => {
           console.log("New achievements unlocked and saved:", newIds);
-          // Set state to show the modal
           setNewlyUnlocked(newlyUnlockedAchievements);
         })
         .catch((error) => {
@@ -227,7 +212,6 @@ export const useAchievements = (userId: string | undefined) => {
         });
     }
 
-    // Set the full list of achievements for the UI
     setAchievements(currentAchievements);
   }, [currentAchievements, profile, userId]);
 
@@ -252,17 +236,17 @@ export const useAchievements = (userId: string | undefined) => {
     }
   };
 
-  const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const unlockedCount = useMemo(() => currentAchievements.filter((a) => a.unlocked).length, [currentAchievements]);
   const totalCount = allAchievements.length;
+  const progress = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
 
   return {
-    achievements,
-    loading: loading, // Pass loading state from profile hook
+    achievements: currentAchievements,
     newlyUnlocked,
     dismissNewAchievements,
     getRarityColor,
     unlockedCount,
     totalCount,
-    progress: totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0,
+    progress,
   };
 };
