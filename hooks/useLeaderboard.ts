@@ -109,56 +109,6 @@ export const useLeaderboard = (userId?: string) => {
     loadLeaderboards();
   }, [loadLeaderboards]);
 
-  const createLeaderboardData = (
-    timeframe: "weekly" | "monthly" | "all-time",
-    users: UserProfile[]
-  ): LeaderboardData => {
-    const entries: LeaderboardEntry[] = users.map((user, index) => ({
-      userId: user.uid,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      username: user.username,
-      rank: index + 1,
-      score: getScoreForTimeframe(user, timeframe),
-      streak: user.stats.currentStreak,
-      weeklyHours: Math.round((user.stats.weeklyLearningTime / 3600) * 10) / 10, // Convert seconds to hours with 1 decimal
-      monthlyCompletions: user.stats.monthlyCompletions,
-      totalAchievements: user.unlockedAchievements.length,
-      isCurrentUser: userId ? user.uid === userId : false,
-      trend: "same", // You can implement trend tracking later
-    }));
-
-    const userRank = userId
-      ? entries.find((e) => e.userId === userId)?.rank
-      : undefined;
-
-    return {
-      timeframe,
-      entries,
-      userRank,
-      totalParticipants: users.length,
-      lastUpdated: new Date(),
-    };
-  };
-
-  const getScoreForTimeframe = (
-    user: UserProfile,
-    timeframe: string
-  ): number => {
-    switch (timeframe) {
-      case "weekly":
-        // weeklyLearningTime is in seconds, convert to minutes for scoring
-        return Math.floor(user.stats.weeklyLearningTime / 60);
-      case "monthly":
-        return user.stats.monthlyCompletions * 100; // Reduced multiplier
-      case "all-time":
-        // completedLearningTime is in seconds, convert to minutes for scoring
-        return Math.floor(user.stats.completedLearningTime / 60);
-      default:
-        return 0;
-    }
-  };
-
   return {
     weeklyLeaderboard,
     monthlyLeaderboard,

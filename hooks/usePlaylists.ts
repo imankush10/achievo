@@ -27,30 +27,32 @@ export const usePlaylists = () => {
       return () => unsubscribe();
     } else if (!user) {
       // User is a guest, use localStorage
-      const loadLocalPlaylists = () => {
-        const localData = JSON.parse(
-          localStorage.getItem("localPlaylists") || "[]"
-        );
-        setPlaylists(localData);
-        setLoading(false);
-      };
+      if (typeof window !== "undefined") {
+        const loadLocalPlaylists = () => {
+          const localData = JSON.parse(
+            localStorage.getItem("localPlaylists") || "[]"
+          );
+          setPlaylists(localData);
+          setLoading(false);
+        };
 
-      loadLocalPlaylists();
+        loadLocalPlaylists();
 
-      // Listen for local changes
-      const handleStorageUpdate = () => {
-        const updatedData = JSON.parse(
-          localStorage.getItem("localPlaylists") || "[]"
-        );
-        setPlaylists(updatedData);
-      };
+        // Listen for local changes
+        const handleStorageUpdate = () => {
+          const updatedData = JSON.parse(
+            localStorage.getItem("localPlaylists") || "[]"
+          );
+          setPlaylists(updatedData);
+        };
 
-      window.addEventListener("localPlaylistsUpdated", handleStorageUpdate);
-      return () =>
-        window.removeEventListener(
-          "localPlaylistsUpdated",
-          handleStorageUpdate
-        );
+        window.addEventListener("localPlaylistsUpdated", handleStorageUpdate);
+        return () =>
+          window.removeEventListener(
+            "localPlaylistsUpdated",
+            handleStorageUpdate
+          );
+      }
     } else {
       // User is logged in but migration is in progress, keep loading
       setLoading(true);
@@ -79,21 +81,23 @@ export const usePlaylists = () => {
         await DatabaseService.createPlaylist(user.uid, playlistData);
       } else {
         // Handle localStorage for guest users
-        const localPlaylists = JSON.parse(
-          localStorage.getItem("localPlaylists") || "[]"
-        );
-        const newPlaylist = {
-          id: Date.now().toString(),
-          userId: "guest",
-          ...playlistData,
-          name: playlistData.name || "Untitled Playlist",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        localPlaylists.push(newPlaylist);
-        localStorage.setItem("localPlaylists", JSON.stringify(localPlaylists));
-        setPlaylists(localPlaylists);
-        window.dispatchEvent(new Event("localPlaylistsUpdated"));
+        if (typeof window !== "undefined") {
+          const localPlaylists = JSON.parse(
+            localStorage.getItem("localPlaylists") || "[]"
+          );
+          const newPlaylist = {
+            id: Date.now().toString(),
+            userId: "guest",
+            ...playlistData,
+            name: playlistData.name || "Untitled Playlist",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          localPlaylists.push(newPlaylist);
+          localStorage.setItem("localPlaylists", JSON.stringify(localPlaylists));
+          setPlaylists(localPlaylists);
+          window.dispatchEvent(new Event("localPlaylistsUpdated"));
+        }
       }
     } catch (error) {
       const errorMessage =
@@ -111,20 +115,22 @@ export const usePlaylists = () => {
       if (user) {
         await DatabaseService.updatePlaylist(playlistId, updates);
       } else {
-        const localPlaylists = JSON.parse(
-          localStorage.getItem("localPlaylists") || "[]"
-        );
-        const updatedPlaylists = localPlaylists.map((playlist: Playlist) =>
-          playlist.id === playlistId
-            ? { ...playlist, ...updates, updatedAt: new Date() }
-            : playlist
-        );
-        localStorage.setItem(
-          "localPlaylists",
-          JSON.stringify(updatedPlaylists)
-        );
-        setPlaylists(updatedPlaylists);
-        window.dispatchEvent(new Event("localPlaylistsUpdated"));
+        if (typeof window !== "undefined") {
+          const localPlaylists = JSON.parse(
+            localStorage.getItem("localPlaylists") || "[]"
+          );
+          const updatedPlaylists = localPlaylists.map((playlist: Playlist) =>
+            playlist.id === playlistId
+              ? { ...playlist, ...updates, updatedAt: new Date() }
+              : playlist
+          );
+          localStorage.setItem(
+            "localPlaylists",
+            JSON.stringify(updatedPlaylists)
+          );
+          setPlaylists(updatedPlaylists);
+          window.dispatchEvent(new Event("localPlaylistsUpdated"));
+        }
       }
     } catch (error) {
       const errorMessage =
@@ -139,18 +145,20 @@ export const usePlaylists = () => {
       if (user) {
         await DatabaseService.deletePlaylist(playlistId);
       } else {
-        const localPlaylists = JSON.parse(
-          localStorage.getItem("localPlaylists") || "[]"
-        );
-        const filteredPlaylists = localPlaylists.filter(
-          (playlist: Playlist) => playlist.id !== playlistId
-        );
-        localStorage.setItem(
-          "localPlaylists",
-          JSON.stringify(filteredPlaylists)
-        );
-        setPlaylists(filteredPlaylists);
-        window.dispatchEvent(new Event("localPlaylistsUpdated"));
+        if (typeof window !== "undefined") {
+          const localPlaylists = JSON.parse(
+            localStorage.getItem("localPlaylists") || "[]"
+          );
+          const filteredPlaylists = localPlaylists.filter(
+            (playlist: Playlist) => playlist.id !== playlistId
+          );
+          localStorage.setItem(
+            "localPlaylists",
+            JSON.stringify(filteredPlaylists)
+          );
+          setPlaylists(filteredPlaylists);
+          window.dispatchEvent(new Event("localPlaylistsUpdated"));
+        }
       }
     } catch (error) {
       const errorMessage =
@@ -182,32 +190,34 @@ export const usePlaylists = () => {
           }
         }
       } else {
-        const localPlaylists = JSON.parse(
-          localStorage.getItem("localPlaylists") || "[]"
-        );
-        const updatedPlaylists = localPlaylists.map((playlist: Playlist) => {
-          if (playlist.id === playlistId) {
-            return {
-              ...playlist,
-              videos: playlist.videos.map((video) =>
-                video.id === videoId ? { ...video, completed } : video
-              ),
-              updatedAt: new Date(),
-            };
+        if (typeof window !== "undefined") {
+          const localPlaylists = JSON.parse(
+            localStorage.getItem("localPlaylists") || "[]"
+          );
+          const updatedPlaylists = localPlaylists.map((playlist: Playlist) => {
+            if (playlist.id === playlistId) {
+              return {
+                ...playlist,
+                videos: playlist.videos.map((video) =>
+                  video.id === videoId ? { ...video, completed } : video
+                ),
+                updatedAt: new Date(),
+              };
+            }
+            return playlist;
+          });
+
+          localStorage.setItem(
+            "localPlaylists",
+            JSON.stringify(updatedPlaylists)
+          );
+          setPlaylists(updatedPlaylists);
+          window.dispatchEvent(new Event("localPlaylistsUpdated"));
+
+          // Update streak for guest users too
+          if (completed) {
+            updateStreak();
           }
-          return playlist;
-        });
-
-        localStorage.setItem(
-          "localPlaylists",
-          JSON.stringify(updatedPlaylists)
-        );
-        setPlaylists(updatedPlaylists);
-        window.dispatchEvent(new Event("localPlaylistsUpdated"));
-
-        // Update streak for guest users too
-        if (completed) {
-          updateStreak();
         }
       }
     } catch (error) {

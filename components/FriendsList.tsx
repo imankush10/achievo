@@ -26,10 +26,10 @@ type DisplayableUser = {
   weeklyLearningTime?: number;
   lastActive?: Date;
   // A property to distinguish between a real friend and a request
-  status: 'friend' | 'pending';
+  status: "friend" | "pending";
   // The original request object, if applicable
   request?: FriendRequest;
-}
+};
 
 export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
   // CORRECT: Destructure the new state and action functions from our hook
@@ -50,21 +50,22 @@ export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
     friend.displayName.toLowerCase().includes(filterTerm.toLowerCase())
   );
 
-  const FriendCard: React.FC<{ user: DisplayableUser; showActions?: boolean }> = ({
-    user,
-    showActions = true,
-  }) => {
-    const isOnline = user.lastActive && Date.now() - user.lastActive.getTime() < 300000;
+  const FriendCard: React.FC<{
+    user: DisplayableUser;
+    showActions?: boolean;
+  }> = ({ user, showActions = true }) => {
+    const isOnline =
+      user.lastActive && Date.now() - user.lastActive.getTime() < 300000;
 
     return (
       <div className="p-4 bg-neutral-800/50 rounded-lg border border-neutral-700/50 hover:border-neutral-600/50 transition-all duration-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <img 
-                src={user.photoURL || '/default-avatar.png'} 
-                className="w-10 h-10 rounded-full bg-neutral-700" 
-                alt={user.displayName} 
+              <img
+                src={user.photoURL || "/default-avatar.png"}
+                className="w-10 h-10 rounded-full bg-neutral-700"
+                alt={user.displayName}
               />
               {isOnline && (
                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-neutral-800 rounded-full"></div>
@@ -73,7 +74,7 @@ export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
             <div>
               <h4 className="font-medium text-white">{user.displayName}</h4>
               {/* Only show stats for actual friends */}
-              {user.status === 'friend' && (
+              {user.status === "friend" && (
                 <>
                   <div className="flex items-center gap-3 text-xs text-neutral-400 mt-1">
                     <span className="flex items-center gap-1">
@@ -82,12 +83,15 @@ export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
                     </span>
                     <span className="flex items-center gap-1">
                       <ClockIcon className="w-3 h-3" />
-                      {(user.weeklyLearningTime || 0).toFixed(1)}h this week
+                      {((user.weeklyLearningTime || 0) / 3600).toFixed(1)}h this
+                      week
                     </span>
                   </div>
                   {user.lastActive && (
                     <p className="text-xs text-neutral-500 mt-1">
-                      {isOnline ? "Online now" : `Last seen ${user.lastActive.toLocaleDateString()}`}
+                      {isOnline
+                        ? "Online now"
+                        : `Last seen ${user.lastActive.toLocaleDateString()}`}
                     </p>
                   )}
                 </>
@@ -96,27 +100,27 @@ export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
           </div>
           {showActions && (
             <div className="flex items-center gap-2">
-              {user.status === 'pending' && user.request ? (
+              {user.status === "pending" && user.request ? (
                 <div className="flex gap-2">
-                  <button 
-                    onClick={() => acceptRequest(user.request!)} 
-                    className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors" 
+                  <button
+                    onClick={() => acceptRequest(user.request!)}
+                    className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                     title="Accept"
                   >
                     <CheckIcon className="w-4 h-4" />
                   </button>
-                  <button 
-                    onClick={() => declineRequest(user.request!.id)} 
-                    className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors" 
+                  <button
+                    onClick={() => declineRequest(user.request!.id)}
+                    className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
                     title="Decline"
                   >
                     <XMarkIcon className="w-4 h-4" />
                   </button>
                 </div>
               ) : (
-                <button 
-                  onClick={() => removeFriend(user.uid)} 
-                  className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200" 
+                <button
+                  onClick={() => removeFriend(user.uid)}
+                  className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200"
                   title="Remove friend"
                 >
                   <UserMinusIcon className="w-4 h-4" />
@@ -144,7 +148,9 @@ export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
 
   return (
     <>
-      {isModalOpen && <FindFriendsModal onClose={() => setIsModalOpen(false)} />}
+      {isModalOpen && (
+        <FindFriendsModal onClose={() => setIsModalOpen(false)} />
+      )}
       <div className="glass-panel p-6">
         <div className="flex justify-between items-center mb-6">
           {/* Header and Tabs */}
@@ -153,21 +159,21 @@ export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
             Friends
           </h3>
           <div className="flex gap-2">
-            <button 
-              onClick={() => setActiveTab("friends")} 
+            <button
+              onClick={() => setActiveTab("friends")}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === "friends" 
-                  ? "bg-blue-600 text-white" 
+                activeTab === "friends"
+                  ? "bg-blue-600 text-white"
                   : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
               }`}
             >
               Friends ({friends.length})
             </button>
-            <button 
-              onClick={() => setActiveTab("requests")} 
+            <button
+              onClick={() => setActiveTab("requests")}
               className={`px-3 py-2 rounded-lg text-sm font-medium relative transition-all duration-200 ${
-                activeTab === "requests" 
-                  ? "bg-blue-600 text-white" 
+                activeTab === "requests"
+                  ? "bg-blue-600 text-white"
                   : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
               }`}
             >
@@ -196,12 +202,15 @@ export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
         )}
 
         {/* Friends Tab */}
-        {activeTab === 'friends' && (
+        {activeTab === "friends" && (
           <div className="space-y-3">
             {friends.length > 0 ? (
               filteredFriends.length > 0 ? (
-                filteredFriends.map(friend => (
-                  <FriendCard key={friend.uid} user={{ ...friend, status: 'friend' }} />
+                filteredFriends.map((friend) => (
+                  <FriendCard
+                    key={friend.uid}
+                    user={{ ...friend, status: "friend" }}
+                  />
                 ))
               ) : (
                 <div className="text-center py-8">
@@ -223,8 +232,8 @@ export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
                 <p className="text-neutral-400 mb-4">
                   Add friends to see their learning progress and compete!
                 </p>
-                <button 
-                  onClick={() => setIsModalOpen(true)} 
+                <button
+                  onClick={() => setIsModalOpen(true)}
                   className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 >
                   Find Friends
@@ -235,19 +244,19 @@ export const FriendsList: React.FC<FriendsListProps> = ({ userId }) => {
         )}
 
         {/* Requests Tab */}
-        {activeTab === 'requests' && (
+        {activeTab === "requests" && (
           <div className="space-y-3">
             {incomingRequests.length > 0 ? (
-              incomingRequests.map(req => (
-                <FriendCard 
-                  key={req.id} 
+              incomingRequests.map((req) => (
+                <FriendCard
+                  key={req.id}
                   user={{
                     uid: req.fromUid,
                     displayName: req.fromName,
                     photoURL: req.fromAvatar,
-                    status: 'pending',
+                    status: "pending",
                     request: req, // Pass the original request object for actions
-                  }} 
+                  }}
                 />
               ))
             ) : (
