@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   FireIcon,
   ClockIcon,
@@ -11,6 +11,7 @@ import { calculateStatsFromPlaylists } from "@/utils/statsCalculator";
 import {
   getStreakData,
   getTimeUntilStreakExpires,
+  StreakData,
 } from "@/utils/streakCalculator";
 import { useAuthContext } from "@/context/AuthContext";
 import { Playlist } from "@/types";
@@ -51,17 +52,27 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return baseStats;
   }, [userProfile?.stats, playlists]);
 
-  // Get streak data from local storage
-  const streakData = useMemo(
-    () => getStreakData(userProfile?.uid || userId),
-    [userProfile?.uid, userId]
-  );
+  // --- Start of the fix ---
+  
+  // 1. Hold streak data in state, with a default server-side value.
+  const [streakData, setStreakData] = useState<StreakData>({
+    currentStreak: 0,
+    longestStreak: 0,
+    lastActivityDate: "",
+  });
+  
+  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number } | null>(null);
 
-  // Calculate time until streak expires
-  const timeLeft = useMemo(
-    () => getTimeUntilStreakExpires(streakData.lastActivityDate),
-    [streakData.lastActivityDate]
-  );
+  // 2. Use `useEffect` to safely access localStorage only on the client.
+  useEffect(() => {
+    const data = getStreakData(userProfile?.uid || userId);
+    const time = getTimeUntilStreakExpires(data.lastActivityDate);
+    
+    setStreakData(data);
+    setTimeLeft(time);
+  }, [userProfile?.uid, userId]); // Re-run when the user ID changes.
+  
+  // --- End of the fix ---
 
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -95,7 +106,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </div>
             </div>
 
-            {timeLeft && (
+            {timeLeft && streakData.currentStreak > 0 && (
               <div className="text-xs text-neutral-400">
                 Keep streak alive in {timeLeft.hours}h {timeLeft.minutes}m
               </div>

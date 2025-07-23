@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { UserProfile, Playlist, Achievement } from "@/types";
 import { DatabaseService } from "@/services/databaseService";
 

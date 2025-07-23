@@ -6,30 +6,46 @@ export interface StreakData {
   lastActivityDate: string;
 }
 
+const isBrowser = typeof window !== "undefined";
+
 export function getStreakData(userId?: string): StreakData {
-  const storageKey = `userStats_${userId || "guest"}`;
-  const stored = localStorage.getItem(storageKey);
-
-  if (stored) {
-    const data = JSON.parse(stored);
-    return {
-      currentStreak: data.currentStreak || 0,
-      longestStreak: data.longestStreak || 0,
-      lastActivityDate: data.lastActivityDate || "",
-    };
-  }
-
-  return {
+  const defaultStreak = {
     currentStreak: 0,
     longestStreak: 0,
     lastActivityDate: "",
   };
+
+  if (!isBrowser) {
+    return defaultStreak;
+  }
+
+  const storageKey = `userStats_${userId || "guest"}`;
+  try {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      const data = JSON.parse(stored);
+      return {
+        currentStreak: data.currentStreak || 0,
+        longestStreak: data.longestStreak || 0,
+        lastActivityDate: data.lastActivityDate || "",
+      };
+    }
+  } catch (error) {
+    console.error("Failed to parse streak data from localStorage", error);
+  }
+
+  return defaultStreak;
 }
 
 export function updateStreak(
   userId?: string,
   activityDate: Date = new Date()
 ): StreakData {
+  if (!isBrowser) {
+    // Cannot update streak on the server
+    return getStreakData(userId);
+  }
+
   const today = activityDate.toDateString();
   const currentData = getStreakData(userId);
 
@@ -40,10 +56,8 @@ export function updateStreak(
 
     let newStreak = 1;
     if (diffDays === 1) {
-      // Consecutive day
       newStreak = currentData.currentStreak + 1;
     } else if (diffDays === 0) {
-      // Same day
       newStreak = currentData.currentStreak;
     }
 
@@ -53,10 +67,8 @@ export function updateStreak(
       lastActivityDate: today,
     };
 
-    // Save to storage
     const storageKey = `userStats_${userId || "guest"}`;
     localStorage.setItem(storageKey, JSON.stringify(updatedData));
-
     return updatedData;
   }
 
@@ -66,12 +78,12 @@ export function updateStreak(
 export function getTimeUntilStreakExpires(
   lastActivityDate?: string
 ): { hours: number; minutes: number } | null {
-  if (!lastActivityDate) return null;
+  if (!isBrowser || !lastActivityDate) return null;
 
   const lastActivity = new Date(lastActivityDate);
   const tomorrow = new Date(lastActivity);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(23, 59, 59, 999);
+  tomorrow.setDate(tomorrow.getDate() + 2); // Set to the end of the next day
+  tomorrow.setHours(0, 0, 0, 0); // Midnight at the start of the day after tomorrow
 
   const now = new Date();
   const timeLeft = tomorrow.getTime() - now.getTime();
