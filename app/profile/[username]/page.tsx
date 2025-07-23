@@ -29,14 +29,22 @@ export default function ProfilePage({
   const resolvedParams = React.use(params);
 
   useEffect(() => {
+    // We cannot fetch until we know the auth status
+    if (authLoading) return;
+
     const fetchProfile = async () => {
       if (!resolvedParams.username) return;
       setLoading(true);
       setError(null);
       try {
+        // --- MODIFIED CALL ---
+        // Pass a boolean indicating if the user is authenticated.
         const userProfile = await DatabaseService.getProfileByUsername(
-          resolvedParams.username
+          resolvedParams.username,
+          !!authUser // `!!` converts user object or null to a true/false boolean
         );
+        // --- END MODIFICATION ---
+
         if (userProfile) {
           setProfile(userProfile);
         } else {
@@ -53,7 +61,8 @@ export default function ProfilePage({
     };
 
     fetchProfile();
-  }, [resolvedParams.username]);
+    // Add authLoading and authUser to the dependency array
+  }, [resolvedParams.username, authLoading, authUser]);
 
   const isOwnProfile = authUser?.uid === profile?.uid;
   const { userProfile: currentUserProfile } = useAuthContext();
@@ -169,7 +178,12 @@ export default function ProfilePage({
               <div className="flex justify-between items-center p-3 bg-neutral-800/50 rounded-lg">
                 <span className="text-neutral-400">Total Learning Time</span>
                 <span className="text-white font-medium">
-                  {(Math.round((displayStats?.completedLearningTime || 0) / 60) /60).toFixed(2)}h
+                  {(
+                    Math.round(
+                      (displayStats?.completedLearningTime || 0) / 60
+                    ) / 60
+                  ).toFixed(2)}
+                  h
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-neutral-800/50 rounded-lg">

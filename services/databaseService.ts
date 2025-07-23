@@ -1,5 +1,3 @@
-// src/services/databaseService.ts
-
 import { db, functions } from "@/lib/firebase";
 import { httpsCallable } from "firebase/functions";
 import {
@@ -47,30 +45,65 @@ export class DatabaseService {
     } as UserProfile;
   }
 
+  /**
+   * Fetches a user profile by their username.
+   * Handles security rules for both authenticated and unauthenticated users.
+   * @param username The username to search for.
+   * @param isAuth Whether the current session user is authenticated.
+   * @returns The user profile or null if not found or not public.
+   */
   static async getProfileByUsername(
-    username: string
+    username: string,
+    isAuth: boolean
   ): Promise<UserProfile | null> {
-    const q = query(
-      this.profilesCollection,
-      where("username", "==", username),
-      firestoreLimit(1)
-    );
+    // Base query to find the user by their unique username
+    const profilesRef = collection(db, "userProfiles");
+    let profileQuery;
 
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      return null;
+    if (isAuth) {
+      // Authenticated user: They can query for any user by username.
+      // The Firestore 'read' rule will handle if they are allowed to see the result.
+      profileQuery = query(
+        profilesRef,
+        where("username", "==", username),
+        firestoreLimit(1)
+      );
+    } else {
+      // Unauthenticated user: The query MUST include the isPublic flag
+      // to satisfy the security rules.
+      profileQuery = query(
+        profilesRef,
+        where("username", "==", username),
+        where("isPublic", "==", true), // <-- THE CRUCIAL PART FOR GUESTS
+        firestoreLimit(1)
+      );
     }
 
-    const profileSnap = querySnapshot.docs[0];
-    const data = profileSnap.data();
+    try {
+      const querySnapshot = await getDocs(profileQuery);
 
-    return {
-      ...data,
-      uid: profileSnap.id,
-      joinedDate: data.joinedDate.toDate(),
-      lastActiveDate: data.lastActiveDate.toDate(),
-    } as UserProfile;
+      if (querySnapshot.empty) {
+        console.log(
+          `Profile not found or not public for username: ${username}`
+        );
+        return null;
+      }
+
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+
+      // Ensure date fields are correctly converted
+      return {
+        ...data,
+        uid: doc.id,
+        joinedDate: data.joinedDate?.toDate(),
+        lastActiveDate: data.lastActiveDate?.toDate(),
+      } as UserProfile;
+    } catch (error) {
+      console.error("Error in getProfileByUsername:", error);
+      // This will catch 'insufficient permissions' if the rules/query are mismatched
+      return null;
+    }
   }
 
   static async createOrUpdateProfile(
