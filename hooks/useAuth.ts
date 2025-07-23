@@ -1,35 +1,17 @@
-import { useAuthState } from "react-firebase-hooks/auth";
 import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { useContext } from "react";
 import { auth } from "@/lib/firebase";
-import { UserProfileService } from "@/services/userProfile";
-import { UserProfile } from "@/types";
+import { AuthContext } from "@/context/AuthContext";
 
+// This hook now uses the global AuthContext for state
+// and only provides auth action functions
 export const useAuth = () => {
-  const [user, loading, error] = useAuthState(auth);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
 
-  // Create or update user profile
-  useEffect(() => {
-    if (user && !loading) {
-      (async () => {
-        try {
-          await UserProfileService.createOrUpdateProfile(user.uid, {
-            email: user.email!,
-            displayName: user.displayName || "Anonymous User",
-            photoURL: user.photoURL || undefined,
-          });
-
-          const profile = await UserProfileService.getUserProfile(user.uid);
-          setUserProfile(profile);
-        } catch (err) {
-          console.error("Failed to fetch or update user profile:", err);
-        }
-      })();
-    } else {
-      setUserProfile(null);
-    }
-  }, [user, loading]);
+  const { user, userProfile, loading } = context;
 
   const signInWithGoogle = async () => {
     try {
@@ -65,7 +47,7 @@ export const useAuth = () => {
     user,
     userProfile,
     loading,
-    error,
+    error: null, // AuthContext doesn't expose error, but we can add it if needed
     signInWithGoogle,
     logout,
     getProfileUrl,

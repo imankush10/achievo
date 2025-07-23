@@ -230,7 +230,7 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({ userId }) => {
 
           <div className="bg-neutral-800/50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-white mb-1">
-              {formatTime(profile.stats.totalLearningTime)}
+              {formatTime(profile.stats.completedLearningTime)}
             </div>
             <div className="text-xs text-neutral-400">Learning Time</div>
           </div>

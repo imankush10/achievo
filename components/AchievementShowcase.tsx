@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   TrophyIcon,
-  LockClosedIcon,
   XMarkIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";

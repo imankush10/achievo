@@ -1,160 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Playlist } from "@/types";
-import { DatabaseService } from "@/services/database";
-import { UserProfileService } from "@/services/userProfile";
+import { DatabaseService } from "@/services/databaseService";
+import { useAuthContext } from "@/context/AuthContext";
+import { calculateStatsFromPlaylists } from "@/utils/statsCalculator";
+import { updateStreak } from "@/utils/streakCalculator";
 
-const MigrationService = {
-  async migrateLocalPlaylistsToUser(userId: string): Promise<void> {
-    try {
-      const localPlaylists = JSON.parse(
-        localStorage.getItem("localPlaylists") || "[]"
-      );
-
-      if (localPlaylists.length === 0) return;
-
-      console.log(
-        `Starting migration of ${localPlaylists.length} playlists for user ${userId}`
-      );
-
-      // Set a flag to indicate migration is in progress (BEFORE clearing localStorage)
-      sessionStorage.setItem(`migration_${userId}`, "in_progress");
-
-      // Migrate each playlist to Firebase FIRST
-      for (const playlist of localPlaylists) {
-        const playlistData = {
-          name: playlist.name || playlist.title || "Untitled Playlist",
-          description: playlist.description || "",
-          videos: playlist.videos || [],
-          thumbnailUrl: playlist.thumbnailUrl || "",
-          totalDuration: playlist.totalDuration || 0,
-          totalVideos: playlist.totalVideos || playlist.videos?.length || 0,
-          completedDuration: playlist.completedDuration || 0,
-        };
-
-        await DatabaseService.createPlaylist(userId, playlistData);
-      }
-
-      // Only clear localStorage AFTER successful migration
-      localStorage.removeItem("localPlaylists");
-
-      // Mark migration as completed for this user
-      sessionStorage.setItem(`migration_${userId}`, "completed");
-      window.dispatchEvent(new Event("localPlaylistsUpdated"));
-
-      console.log(
-        `Successfully migrated ${localPlaylists.length} playlists to user account`
-      );
-    } catch (error) {
-      console.error("Failed to migrate local playlists:", error);
-      // On error, clear the in-progress flag but keep localStorage
-      sessionStorage.removeItem(`migration_${userId}`);
-      throw error;
-    }
-  },
-
-  // Check if migration was already completed for this user
-  isMigrationCompleted(userId: string): boolean {
-    return sessionStorage.getItem(`migration_${userId}`) === "completed";
-  },
-
-  // Check if migration is in progress
-  isMigrationInProgress(userId: string): boolean {
-    return sessionStorage.getItem(`migration_${userId}`) === "in_progress";
-  },
-
-  // Clear migration status (for logout)
-  clearMigrationStatus(userId: string): void {
-    sessionStorage.removeItem(`migration_${userId}`);
-  },
-};
-
-export const usePlaylists = (userId: string | undefined) => {
+export const usePlaylists = () => {
+  const { user, migrationCompleted } = useAuthContext();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Use refs to track migration state persistently
-  const migrationAttempted = useRef<string | null>(null);
-  const migrationInProgress = useRef(false);
-  const previousUserId = useRef<string | undefined>(undefined);
-
-  // Clear migration status when user logs out
   useEffect(() => {
-    if (previousUserId.current && !userId) {
-      // User logged out
-      MigrationService.clearMigrationStatus(previousUserId.current);
-      migrationAttempted.current = null;
-      migrationInProgress.current = false;
-    }
-    previousUserId.current = userId;
-  }, [userId]);
-  
-  useEffect(() => {
-    if (userId && playlists.length > 0 && !loading) {
-      // Update user stats in Firebase when playlists change
-      UserProfileService.updateUserStats(userId, playlists).catch((error) => {
-        console.error("Failed to update user stats:", error);
-      });
-    }
-  }, [playlists, userId, loading]);
+    setLoading(true);
 
-  // Handle migration when user signs in
-  useEffect(() => {
-    const handleMigration = async () => {
-      if (
-        !userId ||
-        migrationAttempted.current === userId ||
-        migrationInProgress.current
-      ) {
-        return;
-      }
-
-      // Check if migration was already completed for this user
-      if (MigrationService.isMigrationCompleted(userId)) {
-        migrationAttempted.current = userId;
-        return;
-      }
-
-      // Check if migration is already in progress
-      if (MigrationService.isMigrationInProgress(userId)) {
-        migrationAttempted.current = userId;
-        return;
-      }
-
-      const localPlaylists = JSON.parse(
-        localStorage.getItem("localPlaylists") || "[]"
-      );
-
-      if (localPlaylists.length > 0) {
-        migrationInProgress.current = true;
-        migrationAttempted.current = userId;
-
-        try {
-          console.log(`Attempting migration for user ${userId}`);
-          await MigrationService.migrateLocalPlaylistsToUser(userId);
-        } catch (err) {
-          console.error("Migration failed:", err);
-          setError("Failed to migrate local playlists");
-          // Reset migration attempt so it can be retried
-          migrationAttempted.current = null;
-        } finally {
-          migrationInProgress.current = false;
-        }
-      } else {
-        migrationAttempted.current = userId;
-      }
-    };
-
-    handleMigration();
-  }, [userId]);
-
-  // Load playlists
-  useEffect(() => {
-    if (userId && !migrationInProgress.current) {
-      // Authenticated user - use Firebase
-      setLoading(true);
+    if (user && migrationCompleted) {
+      // User is logged in and migration is complete, subscribe to Firebase
       const unsubscribe = DatabaseService.subscribeToUserPlaylists(
-        userId,
+        user.uid,
         (newPlaylists) => {
           setPlaylists(newPlaylists);
           setLoading(false);
@@ -162,72 +25,80 @@ export const usePlaylists = (userId: string | undefined) => {
         }
       );
       return () => unsubscribe();
-    } else if (!userId) {
-      // Guest user - use localStorage
+    } else if (!user) {
+      // User is a guest, use localStorage
       const loadLocalPlaylists = () => {
-        const localPlaylists = JSON.parse(
+        const localData = JSON.parse(
           localStorage.getItem("localPlaylists") || "[]"
         );
-        setPlaylists(localPlaylists);
+        setPlaylists(localData);
         setLoading(false);
       };
 
       loadLocalPlaylists();
 
-      const handleStorageUpdate = () => loadLocalPlaylists();
-      window.addEventListener("localPlaylistsUpdated", handleStorageUpdate);
+      // Listen for local changes
+      const handleStorageUpdate = () => {
+        const updatedData = JSON.parse(
+          localStorage.getItem("localPlaylists") || "[]"
+        );
+        setPlaylists(updatedData);
+      };
 
-      return () => {
+      window.addEventListener("localPlaylistsUpdated", handleStorageUpdate);
+      return () =>
         window.removeEventListener(
           "localPlaylistsUpdated",
           handleStorageUpdate
         );
-      };
     } else {
-      // Migration in progress, keep loading true
+      // User is logged in but migration is in progress, keep loading
       setLoading(true);
     }
-  }, [userId, migrationInProgress.current]);
+  }, [user, migrationCompleted]);
+
+  // Update user stats when playlists change (for authenticated users only)
+  useEffect(() => {
+    if (user && playlists.length > 0 && !loading && migrationCompleted) {
+      // Calculate stats using the centralized utility
+      const stats = calculateStatsFromPlaylists(playlists);
+
+      DatabaseService.updateUserStats(user.uid, stats).catch(
+        (error: unknown) => {
+          console.error("Failed to update user stats:", error);
+        }
+      );
+    }
+  }, [playlists, user, loading, migrationCompleted]);
 
   const createPlaylist = async (
     playlistData: Omit<Playlist, "id" | "userId" | "createdAt" | "updatedAt">
   ) => {
     try {
-      console.log("Creating playlist with data:", playlistData); // Debug log
-
-      if (userId) {
-        await DatabaseService.createPlaylist(userId, playlistData);
+      if (user) {
+        await DatabaseService.createPlaylist(user.uid, playlistData);
       } else {
+        // Handle localStorage for guest users
         const localPlaylists = JSON.parse(
           localStorage.getItem("localPlaylists") || "[]"
         );
         const newPlaylist = {
           id: Date.now().toString(),
           userId: "guest",
-          // Handle both name and title fields
-          name: playlistData.name || playlistData.title || "Untitled Playlist",
-          title: playlistData.name || playlistData.title, // Keep for backward compatibility
-          description: playlistData.description || "",
-          videos: playlistData.videos || [],
-          thumbnailUrl: playlistData.thumbnailUrl || "",
-          totalDuration: playlistData.totalDuration || 0,
-          totalVideos:
-            playlistData.totalVideos || playlistData.videos?.length || 0,
-          completedDuration: playlistData.completedDuration || 0,
+          ...playlistData,
+          name: playlistData.name || "Untitled Playlist",
           createdAt: new Date(),
           updatedAt: new Date(),
         };
         localPlaylists.push(newPlaylist);
         localStorage.setItem("localPlaylists", JSON.stringify(localPlaylists));
-
         setPlaylists(localPlaylists);
         window.dispatchEvent(new Event("localPlaylistsUpdated"));
       }
     } catch (error) {
-      console.error("Error in createPlaylist:", error); // Debug log
-      setError(
-        error instanceof Error ? error.message : "Failed to create playlist"
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create playlist";
+      setError(errorMessage);
       throw error;
     }
   };
@@ -237,7 +108,7 @@ export const usePlaylists = (userId: string | undefined) => {
     updates: Partial<Playlist>
   ) => {
     try {
-      if (userId) {
+      if (user) {
         await DatabaseService.updatePlaylist(playlistId, updates);
       } else {
         const localPlaylists = JSON.parse(
@@ -256,16 +127,16 @@ export const usePlaylists = (userId: string | undefined) => {
         window.dispatchEvent(new Event("localPlaylistsUpdated"));
       }
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to update playlist"
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update playlist";
+      setError(errorMessage);
       throw error;
     }
   };
 
   const deletePlaylist = async (playlistId: string) => {
     try {
-      if (userId) {
+      if (user) {
         await DatabaseService.deletePlaylist(playlistId);
       } else {
         const localPlaylists = JSON.parse(
@@ -282,9 +153,9 @@ export const usePlaylists = (userId: string | undefined) => {
         window.dispatchEvent(new Event("localPlaylistsUpdated"));
       }
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to delete playlist"
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete playlist";
+      setError(errorMessage);
       throw error;
     }
   };
@@ -295,7 +166,7 @@ export const usePlaylists = (userId: string | undefined) => {
     completed: boolean
   ) => {
     try {
-      if (userId) {
+      if (user) {
         const playlist = playlists.find((p) => p.id === playlistId);
         if (playlist) {
           const updatedVideos = playlist.videos.map((video) =>
@@ -304,6 +175,11 @@ export const usePlaylists = (userId: string | undefined) => {
           await DatabaseService.updatePlaylist(playlistId, {
             videos: updatedVideos,
           });
+
+          // Update streak when a video is completed
+          if (completed) {
+            updateStreak(user.uid);
+          }
         }
       } else {
         const localPlaylists = JSON.parse(
@@ -328,11 +204,18 @@ export const usePlaylists = (userId: string | undefined) => {
         );
         setPlaylists(updatedPlaylists);
         window.dispatchEvent(new Event("localPlaylistsUpdated"));
+
+        // Update streak for guest users too
+        if (completed) {
+          updateStreak();
+        }
       }
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to update video status"
-      );
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to update video status";
+      setError(errorMessage);
       throw error;
     }
   };

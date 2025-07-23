@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Goal, UserProfile } from "@/types";
-import { GoalService } from "@/services/goalService";
+import { DatabaseService } from "@/services/databaseService";
 
 // Default goals for new users remain the same
 const defaultGoals: Omit<Goal, "id" | "createdAt">[] = [
@@ -29,7 +29,7 @@ const defaultGoals: Omit<Goal, "id" | "createdAt">[] = [
 
 export const useGoals = (
   userId: string | undefined,
-  stats: UserProfile['stats'] | undefined
+  stats: UserProfile["stats"] | undefined
 ) => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +43,7 @@ export const useGoals = (
     }
 
     setLoading(true);
-    const fetchedGoals = await GoalService.getGoals(userId);
+    const fetchedGoals = await DatabaseService.getGoals(userId);
 
     if (fetchedGoals.length > 0) {
       setGoals(fetchedGoals);
@@ -51,7 +51,10 @@ export const useGoals = (
       // Create default goals for new users and save them
       const initialGoals = await Promise.all(
         defaultGoals.map(async (goal) => {
-          const newId = await GoalService.createGoal(userId, { ...goal, createdAt: new Date() });
+          const newId = await DatabaseService.createGoal(userId, {
+            ...goal,
+            createdAt: new Date(),
+          });
           return { ...goal, id: newId, createdAt: new Date() };
         })
       );
@@ -64,35 +67,49 @@ export const useGoals = (
     loadGoals();
   }, [loadGoals]);
 
-  const createGoal = async (goalData: Omit<Goal, 'id' | 'createdAt'>) => {
+  const createGoal = async (goalData: Omit<Goal, "id" | "createdAt">) => {
     if (!userId) return;
-    const newId = await GoalService.createGoal(userId, { ...goalData, createdAt: new Date() });
+    const newId = await DatabaseService.createGoal(userId, {
+      ...goalData,
+      createdAt: new Date(),
+    });
     const newGoal = { ...goalData, id: newId, createdAt: new Date() };
-    setGoals(prev => [newGoal, ...prev]);
+    setGoals((prev) => [newGoal, ...prev]);
   };
 
-  const updateGoal = async (goalId: string, updates: Partial<Omit<Goal, 'id' | 'createdAt'>>) => {
+  const updateGoal = async (
+    goalId: string,
+    updates: Partial<Omit<Goal, "id" | "createdAt">>
+  ) => {
     if (!userId) return;
-    await GoalService.updateGoal(userId, goalId, updates);
-    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, ...updates } : g));
+    await DatabaseService.updateGoal(userId, goalId, updates);
+    setGoals((prev) =>
+      prev.map((g) => (g.id === goalId ? { ...g, ...updates } : g))
+    );
   };
 
   const deleteGoal = async (goalId: string) => {
     if (!userId) return;
-    await GoalService.deleteGoal(userId, goalId);
-    setGoals(prev => prev.filter(g => g.id !== goalId));
+    await DatabaseService.deleteGoal(userId, goalId);
+    setGoals((prev) => prev.filter((g) => g.id !== goalId));
   };
 
-  const getGoalProgress = (goal: Goal, currentStats: UserProfile['stats']) => {
+  const getGoalProgress = (goal: Goal, currentStats: UserProfile["stats"]) => {
     switch (goal.type) {
       case "weekly_hours":
         // Convert seconds to hours for comparison
         const weeklyHours = (currentStats.weeklyLearningTime || 0) / 3600;
         return { current: weeklyHours, target: goal.target };
       case "monthly_playlists":
-        return { current: currentStats.monthlyCompletions || 0, target: goal.target };
+        return {
+          current: currentStats.monthlyCompletions || 0,
+          target: goal.target,
+        };
       case "daily_streak":
-        return { current: currentStats.currentStreak || 0, target: goal.target };
+        return {
+          current: currentStats.currentStreak || 0,
+          target: goal.target,
+        };
       default:
         return { current: 0, target: goal.target };
     }
@@ -101,7 +118,7 @@ export const useGoals = (
   const goalsWithProgress = useMemo(() => {
     if (!stats) return [];
 
-    return goals.map(goal => {
+    return goals.map((goal) => {
       const { current } = getGoalProgress(goal, stats);
       return {
         ...goal,

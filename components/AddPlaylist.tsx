@@ -24,7 +24,7 @@ export const AddPlaylist = () => {
   >();
 
   const { user } = useAuth();
-  const { createPlaylist, playlists } = usePlaylists(user?.uid);
+  const { createPlaylist, playlists } = usePlaylists();
   const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {

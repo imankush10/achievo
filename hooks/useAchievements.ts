@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { UserProfile, Playlist, Achievement } from "@/types";
-import { UserProfileService } from "@/services/userProfile";
+import { DatabaseService } from "@/services/databaseService";
 
 const allAchievements: Omit<
   Achievement,
@@ -187,7 +187,9 @@ export const useAchievements = (
         ...achievementDef,
         progress,
         unlocked: isAlreadyUnlockedInDb || unlocked,
-        unlockedAt: isAlreadyUnlockedInDb ? profile.unlockedAchievements?.[achievementDef.id]?.date : undefined
+        unlockedAt: isAlreadyUnlockedInDb
+          ? profile.unlockedAchievements?.[achievementDef.id]?.date
+          : undefined,
       };
     });
   }, [profile, playlists]);
@@ -202,7 +204,7 @@ export const useAchievements = (
     if (newlyUnlockedAchievements.length > 0) {
       const newIds = newlyUnlockedAchievements.map((ach) => ach.id);
 
-      UserProfileService.unlockAchievements(userId, newIds)
+      DatabaseService.unlockAchievements(userId, newIds)
         .then(() => {
           console.log("New achievements unlocked and saved:", newIds);
           setNewlyUnlocked(newlyUnlockedAchievements);
@@ -236,7 +238,10 @@ export const useAchievements = (
     }
   };
 
-  const unlockedCount = useMemo(() => currentAchievements.filter((a) => a.unlocked).length, [currentAchievements]);
+  const unlockedCount = useMemo(
+    () => currentAchievements.filter((a) => a.unlocked).length,
+    [currentAchievements]
+  );
   const totalCount = allAchievements.length;
   const progress = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
 

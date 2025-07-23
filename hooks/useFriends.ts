@@ -1,10 +1,6 @@
 // src/hooks/useFriends.ts
 
-import {
-  useState,
-  useEffect,
-  useCallback
-} from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   doc,
   getDocs,
@@ -12,17 +8,10 @@ import {
   query,
   where,
   onSnapshot,
-} from 'firebase/firestore';
-import {
-  db
-} from '@/lib/firebase';
-import {
-  FriendService
-} from '@/services/friendService'; // Import the service
-import {
-  UserProfile,
-  FriendRequest
-} from '@/types'; // Make sure FriendRequest is defined in types
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { DatabaseService } from "@/services/databaseService";
+import { UserProfile, FriendRequest } from "@/types"; // Make sure FriendRequest is defined in types
 
 // A 'Friend' is a UserProfile
 export type Friend = UserProfile;
@@ -40,7 +29,7 @@ export const useFriends = (userId?: string) => {
       return;
     }
 
-    const userRef = doc(db, 'userProfiles', userId);
+    const userRef = doc(db, "userProfiles", userId);
     const unsubscribe = onSnapshot(userRef, async (snapshot) => {
       if (!snapshot.exists() || !snapshot.data().friends) {
         setFriends([]);
@@ -55,14 +44,20 @@ export const useFriends = (userId?: string) => {
       }
 
       // Fetch the full profiles for each friend UID
-      const profilesQuery = query(collection(db, 'userProfiles'), where('__name__', 'in', friendUids));
+      const profilesQuery = query(
+        collection(db, "userProfiles"),
+        where("__name__", "in", friendUids)
+      );
       const querySnapshot = await getDocs(profilesQuery);
-      const friendProfiles = querySnapshot.docs.map(doc => ({
-        uid: doc.id,
-        ...doc.data(),
-        joinedDate: doc.data().joinedDate.toDate(),
-        lastActiveDate: doc.data().lastActiveDate.toDate(),
-      } as UserProfile));
+      const friendProfiles = querySnapshot.docs.map(
+        (doc) =>
+          ({
+            uid: doc.id,
+            ...doc.data(),
+            joinedDate: doc.data().joinedDate.toDate(),
+            lastActiveDate: doc.data().lastActiveDate.toDate(),
+          } as UserProfile)
+      );
 
       setFriends(friendProfiles);
     });
@@ -83,33 +78,39 @@ export const useFriends = (userId?: string) => {
 
     // Query for requests sent TO the current user
     const incomingQuery = query(
-      collection(db, 'friendRequests'),
-      where('toUid', '==', userId),
-      where('status', '==', 'pending')
+      collection(db, "friendRequests"),
+      where("toUid", "==", userId),
+      where("status", "==", "pending")
     );
 
     // Query for requests sent BY the current user
     const sentQuery = query(
-      collection(db, 'friendRequests'),
-      where('fromUid', '==', userId),
-      where('status', '==', 'pending')
+      collection(db, "friendRequests"),
+      where("fromUid", "==", userId),
+      where("status", "==", "pending")
     );
 
     const unsubIncoming = onSnapshot(incomingQuery, (snap) => {
-      const requests = snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-      } as FriendRequest));
+      const requests = snap.docs.map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate(),
+          } as FriendRequest)
+      );
       setIncomingRequests(requests);
       setLoading(false); // Set loading false after first fetch
     });
 
     const unsubSent = onSnapshot(sentQuery, (snap) => {
-      const requests = snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as FriendRequest));
+      const requests = snap.docs.map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+          } as FriendRequest)
+      );
       setSentRequests(requests);
     });
 
@@ -119,14 +120,13 @@ export const useFriends = (userId?: string) => {
     };
   }, [userId]);
 
-
   // --- ACTIONS ---
   // These are now simple, clean, and call the secure service layer.
 
   const acceptRequest = useCallback(async (request: FriendRequest) => {
     try {
       // The hook doesn't need the 'toUid' because the function gets it from the auth context.
-      await FriendService.acceptFriendRequest(request.id, request.fromUid);
+      await DatabaseService.acceptFriendRequest(request.id, request.fromUid);
     } catch (error) {
       console.error("Error accepting request:", error);
       // TODO: Show an error toast to the user
@@ -135,7 +135,7 @@ export const useFriends = (userId?: string) => {
 
   const declineRequest = useCallback(async (requestId: string) => {
     try {
-      await FriendService.declineOrCancelRequest(requestId);
+      await DatabaseService.declineOrCancelRequest(requestId);
     } catch (error) {
       console.error("Error declining request:", error);
     }
@@ -143,7 +143,7 @@ export const useFriends = (userId?: string) => {
 
   const cancelSentRequest = useCallback(async (requestId: string) => {
     try {
-      await FriendService.declineOrCancelRequest(requestId);
+      await DatabaseService.declineOrCancelRequest(requestId);
     } catch (error) {
       console.error("Error cancelling request:", error);
     }
@@ -151,12 +151,11 @@ export const useFriends = (userId?: string) => {
 
   const removeFriend = useCallback(async (friendId: string) => {
     try {
-      await FriendService.removeFriend(friendId);
+      await DatabaseService.removeFriend(friendId);
     } catch (error) {
       console.error("Error removing friend:", error);
     }
   }, []);
-
 
   return {
     friends,

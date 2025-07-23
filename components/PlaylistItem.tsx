@@ -3,7 +3,6 @@ import { Playlist } from "@/types";
 import { VideoItem } from "./VideoItem";
 import { YouTubeService } from "@/services/youtube";
 import { usePlaylists } from "@/hooks/usePlaylists";
-import { useAuth } from "@/hooks/useAuth";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -27,8 +26,7 @@ export const PlaylistItem = ({
 }: PlaylistItemProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const { user } = useAuth();
-  const { deletePlaylist, toggleVideoCompletion } = usePlaylists(user?.uid);
+  const { deletePlaylist, toggleVideoCompletion } = usePlaylists();
   const { predefinedCategories, difficultyLevels } = useCategoryManager();
 
   const handleToggleVideo = async (videoId: string, completed: boolean) => {

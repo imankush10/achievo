@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/context/AuthContext";
 import { PublicProfile } from "@/components/PublicProfile";
 import { FriendsList } from "@/components/FriendsList";
 import { Leaderboard } from "@/components/Leaderboard";
 
 import { UserIcon, UsersIcon, TrophyIcon } from "@heroicons/react/24/outline";
 
-import { UserProfileService } from "@/services/userProfile";
+import { DatabaseService } from "@/services/databaseService";
 import { UserProfile as UserProfileType } from "@/types";
 
 export default function ProfilePage({
@@ -33,7 +34,7 @@ export default function ProfilePage({
       setLoading(true);
       setError(null);
       try {
-        const userProfile = await UserProfileService.getUserProfileByUsername(
+        const userProfile = await DatabaseService.getProfileByUsername(
           resolvedParams.username
         );
         if (userProfile) {
@@ -55,6 +56,13 @@ export default function ProfilePage({
   }, [resolvedParams.username]);
 
   const isOwnProfile = authUser?.uid === profile?.uid;
+  const { userProfile: currentUserProfile } = useAuthContext();
+
+  // Use live stats from AuthContext for own profile, Firebase data for others
+  const displayStats =
+    isOwnProfile && currentUserProfile?.stats
+      ? currentUserProfile.stats
+      : profile?.stats;
 
   if (loading || authLoading) {
     return (
@@ -161,13 +169,13 @@ export default function ProfilePage({
               <div className="flex justify-between items-center p-3 bg-neutral-800/50 rounded-lg">
                 <span className="text-neutral-400">Total Learning Time</span>
                 <span className="text-white font-medium">
-                  {Math.round((profile.stats?.totalLearningTime || 0) / 60)}h
+                  {(Math.round((displayStats?.completedLearningTime || 0) / 60) /60).toFixed(2)}h
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-neutral-800/50 rounded-lg">
                 <span className="text-neutral-400">Videos Completed</span>
                 <span className="text-white font-medium">
-                  {profile.stats?.completedVideos || 0}
+                  {displayStats?.completedVideos || 0}
                 </span>
               </div>
             </div>
@@ -192,15 +200,15 @@ export default function ProfilePage({
                 <div className="flex justify-between">
                   <span className="text-neutral-400">Learning Streak</span>
                   <span className="text-white font-medium">
-                    {profile.stats?.currentStreak || 0} days
+                    {displayStats?.currentStreak || 0} days
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-400">Weekly Goal</span>
                   <span className="text-green-400 font-medium">
-                    {profile.stats?.weeklyLearningTime
+                    {displayStats?.weeklyLearningTime
                       ? Math.round(
-                          (profile.stats.weeklyLearningTime / 300) * 100
+                          (displayStats.weeklyLearningTime / 300) * 100
                         )
                       : 0}
                     %
