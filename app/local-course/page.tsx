@@ -89,23 +89,33 @@ export default function LocalCoursePage() {
           </div>
           <h2 className="text-2xl font-bold text-neutral-200 mb-2">Generate the Playlist File</h2>
           <p className="text-neutral-400 mb-6 flex-grow">
-            If you haven't already, download our simple tool. Run it in your course folder to instantly create the `playlist.json` file.
+            If you haven't already, download our simple tool. Run it, enter your course folder to instantly create the `playlist.json` file.
           </p>
           <div className="space-y-4">
             <a 
-              href="/downloads/playlist_generator_gui.exe" // <-- IMPORTANT: REPLACE WITH YOUR URL
+              href="https://github.com/imankush10/achievo/releases/download/tool-v1.0.0/PlaylistGenerator_Windows.exe"
               download
               className="w-full flex items-center justify-center gap-3 bg-neutral-700 hover:bg-neutral-600 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200"
             >
               Download for Windows (.exe)
             </a>
             <a 
-              href="/downloads/playlist_generator_gui.zip" // <-- IMPORTANT: REPLACE WITH YOUR URL (macOS apps should be zipped)
+              href="https://github.com/imankush10/achievo/releases/download/tool-v1.0.0/playlistgenerator_mac.app.zip"
               download
               className="w-full flex items-center justify-center gap-3 bg-neutral-700 hover:bg-neutral-600 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200"
             >
               Download for macOS (.zip)
             </a>
+            <div className="text-center pt-2">
+              <a 
+                href="https://github.com/imankush10/achievo/tree/video-parser"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-neutral-400 hover:text-neutral-300 underline transition-colors duration-200"
+              >
+                Don't trust? It's open source - check the code
+              </a>
+            </div>
           </div>
         </div>
 
