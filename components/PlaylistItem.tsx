@@ -135,7 +135,7 @@ export const PlaylistItem = ({
                 <PlayIcon className="w-4 h-4 text-black" />
               </div>
               <h3 className="text-xl font-semibold text-white">
-                {playlist.name || playlist.title}
+                {playlist.name}
               </h3>
             </div>
             {(playlist.categories?.length > 0 ||

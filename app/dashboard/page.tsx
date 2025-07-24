@@ -11,6 +11,8 @@ import { usePlaylists } from "@/hooks/usePlaylists";
 import { usePlaylistFilters } from "@/hooks/usePlaylistFilters";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { CategoryFilter } from "@/components/CategoryFilter";
+import { ComputerDesktopIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -130,6 +132,22 @@ export default function Home() {
   return (
     <>
       <AddPlaylist />
+
+      <div className="text-center my-8">
+        <div className="relative flex items-center justify-center">
+            <div className="w-full border-t border-neutral-700"></div>
+            <div className="relative px-4 bg-neutral-900 text-neutral-500 text-sm">OR</div>
+        </div>
+        <div className="mt-6">
+            <Link 
+              href="/local-course"
+              className="inline-flex items-center justify-center gap-3 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-neutral-200 py-4 px-8 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+            >
+              <ComputerDesktopIcon className="w-6 h-6 text-purple-400" />
+              <span>Track a Local Course from Your Computer</span>
+            </Link>
+        </div>
+      </div>
 
       {!loading && playlists.length > 0 && (
         <>

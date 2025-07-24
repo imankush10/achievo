@@ -1,10 +1,13 @@
+// src/components/VideoItem.tsx
+
 import { Video } from '@/types';
 import { YouTubeService } from '@/services/youtube';
-import { CheckIcon, ClockIcon } from '@heroicons/react/24/outline';
+// Updated imports: added FilmIcon for the placeholder
+import { CheckIcon, ClockIcon, FilmIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 
 interface VideoItemProps {
-  video: Video;
+  video: Video; // Assuming 'Video' is your type, not 'PlaylistVideo'
   onToggleComplete: (videoId: string, completed: boolean) => void;
 }
 
@@ -28,14 +31,25 @@ export const VideoItem = ({ video, onToggleComplete }: VideoItemProps) => {
         </button>
         
         <div className="relative flex-shrink-0 mr-4">
-          <Image
-            src={video.thumbnailUrl}
-            alt={video.title}
-            width={80}
-            height={56}
-            className="w-20 h-14 object-cover rounded-lg"
-            unoptimized
-          />
+          {/* --- MODIFICATION START --- */}
+          {video.thumbnailUrl ? (
+            // If a thumbnail URL exists, render the Image
+            <Image
+              src={video.thumbnailUrl}
+              alt={video.title}
+              width={80}
+              height={56}
+              className="w-20 h-14 object-cover rounded-lg bg-neutral-700"
+              unoptimized
+            />
+          ) : (
+            // Otherwise, render a placeholder div
+            <div className="w-20 h-14 rounded-lg bg-neutral-700/50 flex items-center justify-center">
+              <FilmIcon className="w-8 h-8 text-neutral-500" />
+            </div>
+          )}
+          {/* --- MODIFICATION END --- */}
+
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-lg" />
           <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded">
             {YouTubeService.formatDuration(video.durationInSeconds)}
