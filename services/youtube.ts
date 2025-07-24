@@ -3,8 +3,33 @@ import { Video } from "@/types";
 
 export class YouTubeService {
   static extractPlaylistId(url: string): string | null {
-    const match = url.match(/[?&]list=([^&]+)/);
-    return match ? match[1] : null;
+    try {
+      const urlObject = new URL(url);
+      const listId = urlObject.searchParams.get("list");
+
+      // Check if it's a YouTube Mix/Radio playlist
+      if (listId && listId.startsWith("RD")) {
+        throw new Error("YouTube mixes are not supported. Please use regular playlists only.");
+      }
+
+      // Check if there's no playlist parameter but it might be a video URL
+      if (!listId && (urlObject.searchParams.get("v") || urlObject.pathname.includes("/watch"))) {
+        throw new Error("Individual videos are not supported. Please use playlist URLs only.");
+      }
+
+      // Check if there's no list parameter at all
+      if (!listId) {
+        throw new Error("Only YouTube playlists are supported. Please provide a valid playlist URL.");
+      }
+
+      return listId;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("supported")) {
+        throw error; // Re-throw our custom errors
+      }
+      // This will catch any invalid URL formats that can't be parsed
+      throw new Error("Invalid URL format. Please provide a valid YouTube playlist URL.");
+    }
   }
 
   static async getPlaylistData(
@@ -20,7 +45,7 @@ export class YouTubeService {
       // Throw the error message from the server's response
       const errorMessage =
         error.response?.data?.error || "Failed to fetch playlist data";
-      console.error("Error fetching playlist:", errorMessage);
+      // console.error("Error fetching playlist:", errorMessage);
       throw new Error(errorMessage);
     }
   }

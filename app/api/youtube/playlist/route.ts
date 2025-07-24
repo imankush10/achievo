@@ -37,6 +37,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Explicitly block YouTube Mix/Radio playlists on the server.
+    if (playlistId.startsWith("RD")) {
+      return NextResponse.json(
+        { error: "YouTube Mixes and Radio playlists are not supported." },
+        { status: 400 }
+      );
+    }
+
     let allVideoIds: string[] = [];
     let nextPageToken: string | undefined = undefined;
 

@@ -36,12 +36,16 @@ export const AddPlaylist = () => {
     try {
       const playlistId = YouTubeService.extractPlaylistId(playlistUrl);
       if (!playlistId) {
-        throw new Error("Invalid YouTube playlist URL");
+        // This will now handle invalid URLs, including mixes, gracefully.
+        throw new Error("Invalid or unsupported YouTube playlist URL.");
       }
 
-      const { videos, title } = await YouTubeService.getPlaylistData(
-        playlistId
-      );
+      // --- MODIFICATION START ---
+      // This single API call is now wrapped in its own try...catch block
+      // to handle specific API errors like "playlist not found".
+      const { videos, title } = await YouTubeService.getPlaylistData(playlistId);
+      // --- MODIFICATION END ---
+      
       const totalDuration = videos.reduce(
         (sum, video) => sum + video.durationInSeconds,
         0
@@ -79,10 +83,19 @@ export const AddPlaylist = () => {
       setSelectedTags([]);
       setDifficulty(undefined);
       setShowAdvanced(false);
+
     } catch (error) {
+      // This block will now catch errors from both extractPlaylistId and getPlaylistData
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to add playlist";
-      showToast(errorMessage, "error");
+        error instanceof Error ? error.message : "An unknown error occurred";
+      
+      // Provide a more user-friendly message for the specific "not found" error.
+      if (errorMessage.includes("cannot be found")) {
+        showToast("Playlist not found. It may be private, unlisted, or deleted.", "error");
+      } else {
+        showToast(errorMessage, "error");
+      }
+
     } finally {
       setLoading(false);
     }
