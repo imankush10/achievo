@@ -135,23 +135,49 @@ export default function Home() {
 
       <div className="text-center my-8">
         <div className="relative flex items-center justify-center">
-            <div className="w-full border-t border-neutral-700"></div>
-            <div className="relative px-4 bg-neutral-900 text-neutral-500 text-sm">OR</div>
+          <div className="w-full border-t border-neutral-700"></div>
+          <div className="relative px-4 bg-neutral-900 text-neutral-500 text-sm">
+            OR
+          </div>
         </div>
         <div className="mt-6">
-            <Link 
-              href="/local-course"
-              className="inline-flex items-center justify-center gap-3 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-neutral-200 py-4 px-8 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1"
-            >
-              <ComputerDesktopIcon className="w-6 h-6 text-purple-400" />
-              <span>Track a Local Course from Your Computer</span>
-            </Link>
+          <Link
+            href="/local-course"
+            className="inline-flex items-center justify-center gap-3 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-neutral-200 py-4 px-8 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+          >
+            <ComputerDesktopIcon className="w-6 h-6 text-purple-400" />
+            <span>Track a Local Course from Your Computer</span>
+          </Link>
         </div>
       </div>
 
       {!loading && playlists.length > 0 && (
         <>
-          <div className="flex justify-end gap-2 mb-4">
+         
+          <CategoryFilter
+            playlists={playlists}
+            selectedCategory={filters.category}
+            onCategoryChange={(category) => updateFilter("category", category)}
+          />
+
+          <SearchBar
+            searchTerm={filters.searchTerm}
+            onSearchChange={(term) => updateFilter("searchTerm", term)}
+            statusFilter={filters.status}
+            onStatusChange={(status) => updateFilter("status", status)}
+            durationFilter={filters.duration}
+            onDurationChange={(duration) => updateFilter("duration", duration)}
+            sortBy={filters.sortBy}
+            sortOrder={filters.sortOrder}
+            onSortChange={(sortBy, sortOrder) => {
+              updateFilter("sortBy", sortBy);
+              updateFilter("sortOrder", sortOrder);
+            }}
+            totalResults={totalResults}
+            totalPlaylists={totalPlaylists}
+            onClearFilters={clearFilters}
+          />
+          <div className="flex mb-4">
             <button
               onClick={handleToggleBulkMode}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -163,41 +189,13 @@ export default function Home() {
               {showBulkMode ? "Exit Bulk Mode" : "Bulk Actions"}
             </button>
           </div>
-
-          <SelectionHeader
+           <SelectionHeader
             totalCount={filteredPlaylists.length}
             selectedCount={selectedCount}
             onToggleSelectAll={() =>
               toggleSelectAll(filteredPlaylists.map((p) => p.id))
             }
             showBulkActions={showBulkMode}
-          />
-          <CategoryFilter
-            playlists={playlists}
-            selectedCategory={filters.category}
-            onCategoryChange={(category) =>
-              updateFilter("category", category)
-            }
-          />
-
-          <SearchBar
-            searchTerm={filters.searchTerm}
-            onSearchChange={(term) => updateFilter("searchTerm", term)}
-            statusFilter={filters.status}
-            onStatusChange={(status) => updateFilter("status", status)}
-            durationFilter={filters.duration}
-            onDurationChange={(duration) =>
-              updateFilter("duration", duration)
-            }
-            sortBy={filters.sortBy}
-            sortOrder={filters.sortOrder}
-            onSortChange={(sortBy, sortOrder) => {
-              updateFilter("sortBy", sortBy);
-              updateFilter("sortOrder", sortOrder);
-            }}
-            totalResults={totalResults}
-            totalPlaylists={totalPlaylists}
-            onClearFilters={clearFilters}
           />
         </>
       )}
