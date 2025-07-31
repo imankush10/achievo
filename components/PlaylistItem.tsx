@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Playlist } from "@/types";
 import { VideoItem } from "./VideoItem";
 import { YouTubeService } from "@/services/youtube";
@@ -10,6 +10,7 @@ import {
   PlayIcon,
 } from "@heroicons/react/24/outline";
 import { useCategoryManager } from "@/hooks/useCategoryManager";
+import { useToast } from "./Toast";
 
 interface PlaylistItemProps {
   playlist: Playlist;
@@ -26,8 +27,15 @@ export const PlaylistItem = ({
 }: PlaylistItemProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [videoToPlay, setVideoToPlay] = useState<null | { id: string; title: string }>(null);
   const { deletePlaylist, toggleVideoCompletion } = usePlaylists();
   const { predefinedCategories, difficultyLevels } = useCategoryManager();
+  const { showToast } = useToast();
+
+  // Utility: Youtube playlist detection
+  const isYoutubePlaylist =
+    typeof playlist.playlistUrl === "string" &&
+    playlist.playlistUrl.includes("youtube.com");
 
   const handleToggleVideo = async (videoId: string, completed: boolean) => {
     try {
@@ -37,6 +45,15 @@ export const PlaylistItem = ({
       console.error("Failed to toggle video completion:", error);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // Handler: Video play (thumbnail click)
+  const handlePlayVideo = (video: any) => {
+    if (isYoutubePlaylist) {
+      setVideoToPlay({ id: video.id, title: video.title });
+    } else {
+      showToast("Only YouTube videos are playable!", "warning");
     }
   };
 
@@ -252,8 +269,44 @@ export const PlaylistItem = ({
               key={video.id}
               video={video}
               onToggleComplete={handleToggleVideo}
+              isYoutube={isYoutubePlaylist}
+              onPlay={handlePlayVideo}
             />
           ))}
+        </div>
+      )}
+
+      {/* Youtube Modal */}
+      {videoToPlay && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setVideoToPlay(null)}
+        >
+          <div
+            className="bg-neutral-900 rounded-xl p-4 max-w-xl w-full relative shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-white text-xl font-bold hover:text-gray-300"
+              onClick={() => setVideoToPlay(null)}
+              aria-label="Close video"
+            >
+              ×
+            </button>
+            <h3 className="mb-3 text-lg font-semibold text-white">{videoToPlay.title}</h3>
+            <div className="aspect-video w-full rounded overflow-hidden">
+              <iframe
+                width="100%"
+                height="315"
+                src={`https://www.youtube.com/embed/${videoToPlay.id}?autoplay=1`}
+                title={videoToPlay.title}
+                style={{ border: 0 }}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                className="w-full h-64 md:h-80"
+              />
+            </div>
+          </div>
         </div>
       )}
 

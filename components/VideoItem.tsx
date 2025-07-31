@@ -2,38 +2,46 @@
 
 import { Video } from '@/types';
 import { YouTubeService } from '@/services/youtube';
-// Updated imports: added FilmIcon for the placeholder
-import { CheckIcon, ClockIcon, FilmIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, ClockIcon, FilmIcon, PlayCircleIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 
 interface VideoItemProps {
-  video: Video; // Assuming 'Video' is your type, not 'PlaylistVideo'
+  video: Video;
   onToggleComplete: (videoId: string, completed: boolean) => void;
+  onPlay?: (video: Video) => void; // <-- Add this prop!
+  isYoutube: boolean; // <-- NEW: playlist is youtube
 }
 
-export const VideoItem = ({ video, onToggleComplete }: VideoItemProps) => {
-  return (
-    <div className={`group relative overflow-hidden rounded-xl border transition-all duration-300 ${
-      video.completed 
-        ? 'bg-neutral-800/30 border-neutral-700/50 opacity-75' 
+export const VideoItem = ({ video, onToggleComplete, onPlay, isYoutube }: VideoItemProps) => (
+  <div
+    className={`group relative overflow-hidden rounded-xl border transition-all duration-300 ${
+      video.completed
+        ? 'bg-neutral-800/30 border-neutral-700/50 opacity-75'
         : 'bg-neutral-800/50 border-neutral-700/50 hover:bg-neutral-700/50 hover:border-neutral-600/50'
-    }`}>
-      <div className="flex items-center p-4">
+    }`}
+  >
+    <div className="flex items-center p-4">
+      <button
+        onClick={() => onToggleComplete(video.id, !video.completed)}
+        className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 mr-4 flex items-center justify-center transition-all duration-200 ${
+          video.completed
+            ? 'bg-green-500 border-green-500 text-white'
+            : 'border-neutral-500 hover:border-green-400 hover:bg-green-400/10'
+        }`}
+      >
+        {video.completed && <CheckIcon className="w-4 h-4" />}
+      </button>
+
+      <div className="relative flex-shrink-0 mr-4">
         <button
-          onClick={() => onToggleComplete(video.id, !video.completed)}
-          className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 mr-4 flex items-center justify-center transition-all duration-200 ${
-            video.completed
-              ? 'bg-green-500 border-green-500 text-white'
-              : 'border-neutral-500 hover:border-green-400 hover:bg-green-400/10'
-          }`}
+          type="button"
+          className="focus:outline-none"
+          tabIndex={-1}
+          onClick={onPlay ? () => onPlay(video) : undefined} // <-- Call onPlay
+          disabled={!isYoutube}
+          aria-label="Play video"
         >
-          {video.completed && <CheckIcon className="w-4 h-4" />}
-        </button>
-        
-        <div className="relative flex-shrink-0 mr-4">
-          {/* --- MODIFICATION START --- */}
           {video.thumbnailUrl ? (
-            // If a thumbnail URL exists, render the Image
             <Image
               src={video.thumbnailUrl}
               alt={video.title}
@@ -43,31 +51,32 @@ export const VideoItem = ({ video, onToggleComplete }: VideoItemProps) => {
               unoptimized
             />
           ) : (
-            // Otherwise, render a placeholder div
             <div className="w-20 h-14 rounded-lg bg-neutral-700/50 flex items-center justify-center">
               <FilmIcon className="w-8 h-8 text-neutral-500" />
             </div>
           )}
-          {/* --- MODIFICATION END --- */}
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-lg" />
-          <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded">
-            {YouTubeService.formatDuration(video.durationInSeconds)}
-          </div>
+          {isYoutube && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/10 hover:bg-black/40 rounded-lg transition group-hover:bg-black/30">
+              <PlayCircleIcon className="w-8 h-8 text-white/80 opacity-80 pointer-events-none" />
+            </span>
+          )}
+        </button>
+        <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded">
+          {YouTubeService.formatDuration(video.durationInSeconds)}
         </div>
-        
-        <div className="flex-1 min-w-0">
-          <h4 className={`font-medium text-sm leading-tight mb-1 ${
-            video.completed ? 'line-through text-neutral-500' : 'text-white'
-          }`}>
-            {video.title}
-          </h4>
-          <div className="flex items-center space-x-2 text-xs text-neutral-400">
-            <ClockIcon className="w-3 h-3" />
-            <span>{YouTubeService.formatDuration(video.durationInSeconds)}</span>
-          </div>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <h4 className={`font-medium text-sm leading-tight mb-1 ${
+          video.completed ? 'line-through text-neutral-500' : 'text-white'
+        }`}>
+          {video.title}
+        </h4>
+        <div className="flex items-center space-x-2 text-xs text-neutral-400">
+          <ClockIcon className="w-3 h-3" />
+          <span>{YouTubeService.formatDuration(video.durationInSeconds)}</span>
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
