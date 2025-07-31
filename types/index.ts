@@ -6,6 +6,7 @@ export interface Video {
   thumbnailUrl: string;
   completed: boolean;
   order: number;
+  videoUrl?: string;
 }
 
 export interface Playlist {

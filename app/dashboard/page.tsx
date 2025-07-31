@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AddPlaylist } from "@/components/AddPlaylist";
 import { PlaylistItem } from "@/components/PlaylistItem";
+import { ManualAddPlaylistForm } from "@/components/ManualAddPlaylistForm";
 import { SearchBar } from "@/components/SearchBar";
 import { BulkActionsBar } from "@/components/BulkActionsBar";
 import { SelectionHeader } from "@/components/SelectionHeader";
@@ -38,6 +39,7 @@ export default function Home() {
 
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   const [showBulkMode, setShowBulkMode] = useState(false);
+  const [isManualFormOpen, setIsManualFormOpen] = useState(false);
 
   // Bulk action handlers
   const handleMarkAllComplete = async () => {
@@ -131,6 +133,8 @@ export default function Home() {
 
   return (
     <>
+      {isManualFormOpen && <ManualAddPlaylistForm onClose={() => setIsManualFormOpen(false)} />}
+
       <AddPlaylist />
 
       <div className="text-center my-8">
@@ -140,7 +144,14 @@ export default function Home() {
             OR
           </div>
         </div>
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col gap-4">
+          <button
+            onClick={() => setIsManualFormOpen(true)}
+            className="inline-flex items-center justify-center gap-3 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-neutral-200 py-4 px-8 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+          >
+            <ComputerDesktopIcon className="w-6 h-6 text-purple-400" />
+            <span>Create a Manual Playlist</span>
+          </button>
           <Link
             href="/local-course"
             className="inline-flex items-center justify-center gap-3 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-neutral-200 py-4 px-8 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1"

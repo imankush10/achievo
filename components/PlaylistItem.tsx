@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Playlist } from "@/types";
+import { Playlist, Video } from "@/types";
 import { VideoItem } from "./VideoItem";
 import { YouTubeService } from "@/services/youtube";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import {
+  PencilIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   TrashIcon,
@@ -28,7 +29,9 @@ export const PlaylistItem = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [videoToPlay, setVideoToPlay] = useState<null | { id: string; title: string }>(null);
-  const { deletePlaylist, toggleVideoCompletion } = usePlaylists();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState(playlist.name);
+  const { deletePlaylist, toggleVideoCompletion, updatePlaylist, updateVideoDetails } = usePlaylists();
   const { predefinedCategories, difficultyLevels } = useCategoryManager();
   const { showToast } = useToast();
 
@@ -71,6 +74,23 @@ export const PlaylistItem = ({
     if (onSelectionChange) {
       onSelectionChange(playlist.id);
     }
+  };
+
+  // Handler to save the new playlist name
+  const handleRenamePlaylist = async () => {
+    if (newName.trim() && newName.trim() !== playlist.name) {
+      try {
+        await updatePlaylist(playlist.id, { name: newName.trim() });
+      } catch (error) {
+        console.error("Failed to rename playlist:", error);
+      }
+    }
+    setIsEditingName(false);
+  };
+  
+  // Handler to pass down to VideoItem
+  const handleUpdateVideoDetails = (videoId: string, updates: Partial<Video>) => {
+    return updateVideoDetails(playlist.id, videoId, updates);
   };
 
   const completedVideos = playlist.videos.filter(
@@ -151,9 +171,27 @@ export const PlaylistItem = ({
               <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
                 <PlayIcon className="w-4 h-4 text-black" />
               </div>
-              <h3 className="text-xl font-semibold text-white">
-                {playlist.name}
-              </h3>
+              {isEditingName ? (
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onBlur={handleRenamePlaylist}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRenamePlaylist()}
+                  className="text-xl font-semibold bg-transparent border-b-2 border-blue-500 text-white focus:outline-none"
+                  autoFocus
+                />
+              ) : (
+                <h3 className="text-xl font-semibold text-white">
+                  {playlist.name}
+                </h3>
+              )}
+              <button 
+                onClick={() => setIsEditingName(true)} 
+                className="text-neutral-400 hover:text-white transition-colors duration-200"
+              >
+                <PencilIcon className="w-4 h-4" />
+              </button>
             </div>
             {(playlist.categories?.length > 0 ||
               playlist.tags?.length > 0 ||
@@ -271,6 +309,7 @@ export const PlaylistItem = ({
               onToggleComplete={handleToggleVideo}
               isYoutube={isYoutubePlaylist}
               onPlay={handlePlayVideo}
+              onUpdateDetails={handleUpdateVideoDetails}
             />
           ))}
         </div>
@@ -315,6 +354,6 @@ export const PlaylistItem = ({
           <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
-    </div>
-  );
-};
+      </div>
+    );
+  };

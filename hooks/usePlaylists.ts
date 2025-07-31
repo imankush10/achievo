@@ -5,7 +5,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import { calculateStatsFromPlaylists } from "@/utils/statsCalculator";
 import { updateStreak } from "@/utils/streakCalculator";
 
-export const usePlaylists = () => {
+export const usePlaylists = (userId?: string) => {
   const { user, migrationCompleted } = useAuthContext();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -230,6 +230,27 @@ export const usePlaylists = () => {
     }
   };
 
+  const updateVideoDetails = async (
+    playlistId: string,
+    videoId: string,
+    updates: Partial<Video>
+  ) => {
+    try {
+      const playlist = playlists.find((p) => p.id === playlistId);
+      if (!playlist) throw new Error("Playlist not found");
+
+      const updatedVideos = playlist.videos.map((video) =>
+        video.id === videoId ? { ...video, ...updates } : video
+      );
+
+      // We use the existing updatePlaylist function to save the changes
+      await updatePlaylist(playlistId, { videos: updatedVideos });
+    } catch (error) {
+      console.error("Failed to update video details:", error);
+      throw error; // Re-throw to be handled by the component
+    }
+  };
+
   return {
     playlists,
     loading,
@@ -238,5 +259,6 @@ export const usePlaylists = () => {
     updatePlaylist,
     deletePlaylist,
     toggleVideoCompletion,
+    updateVideoDetails,
   };
 };
