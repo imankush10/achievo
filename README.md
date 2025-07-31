@@ -25,3 +25,24 @@ Transform video playlists from YouTube or your local files into interactive and 
 - **Public/Private Profiles**: Your profile at `/profile/[username]` showcases your stats, including total playlists, completion data, current streak, and recent achievements. You can change your username and set your profile to private.
 - **Friends System**: Connect with other learners by searching for users and sending friend requests.
 - **Leaderboards**: Compete with others and see where you rank! View weekly, monthly, and all-time leaderboards based on points earned.
+
+## Project Todos
+
+### Core Functionality & UI/UX
+- [x] **In-App Video Playback**: Allow users to watch videos directly within the app through an embedded player.
+
+### Community & Content Discovery
+- [x] **Custom Playlist Creation**: Users can create their own manual playlists with custom videos and tasks.
+- [ ] **Public Playlist Sharing**: Implement a feature for users to publish their custom playlists for the community to discover.
+- [ ] **Community Feedback System**: For public playlists, add:
+    - [ ] An upvote and downvote system to rank community content.
+    - [ ] A review and comment section for user feedback and discussion.
+- [ ] **Curated Learning Paths**: Introduce a section of officially curated, skill-based playlists for users who are unsure where to start.
+- [ ] **Homepage Playlist Showcase**: Feature top-rated and trending playlists on the homepage to improve content discovery.
+
+### Collaborative & Social Features
+- [ ] **Learning Partner System**:
+    - [ ] **Automatic Partner Matching**: Develop an algorithm to automatically pair users based on intersecting goals, categories, and desired completion timelines.
+    - [ ] **Shared Goal Timer**: Allow partners to mutually agree on a timer for completing a shared playlist or goal.
+    - [ ] **Gamified Partner Rewards**: Award points and leaderboard rankings to partners who successfully complete their goals within the established time.
+    - [ ] **Partner Chat**: Integrate a private chat system for partners to communicate and collaborate.
